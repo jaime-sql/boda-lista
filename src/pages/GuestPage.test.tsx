@@ -26,10 +26,10 @@ describe('GuestPage', () => {
 
     expect(await screen.findByRole('heading', { level: 1 })).toHaveProperty(
       'textContent',
-      expect.stringContaining('Pareja Alfa'),
+      expect.stringContaining('Lucía Mendoza'),
     );
-    expect(screen.getByText(/Jardín El Ejemplo/)).toBeTruthy();
-    expect(screen.queryByText(/Hacienda El Sauce/)).toBeNull();
+    expect(screen.getByText(/Hacienda El Sauce/)).toBeTruthy();
+    expect(screen.queryByText(/Jardín El Ejemplo/)).toBeNull();
     await user.type(screen.getByLabelText('Tu pregunta'), '¿A qué hora es la ceremonia?');
     await user.click(screen.getByRole('button', { name: 'Enviar' }));
     expect(await screen.findByText('Buscando en la información de la boda…')).toBeTruthy();

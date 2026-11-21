@@ -6,6 +6,7 @@ import {
   PACK_SHEET_PATH,
   activeSheetOrigin,
   isWeddingInfo,
+  loadBundledWeddingInfo,
   loadFromLoaders,
   resolveWeddingInfo,
 } from './loadWeddingInfo';
@@ -56,6 +57,17 @@ describe('wedding info loader', () => {
       ),
     ).resolves.toBe(sheet);
     expect(isWeddingInfo(sheet)).toBe(true);
+  });
+
+  it('returns the data-pack sheet when data/wedding_info.json is present', async () => {
+    expect(activeSheetOrigin()).toBe('pack');
+    const loaded = await loadBundledWeddingInfo();
+    expect(loaded.venue.name).toBe('Hacienda El Sauce');
+    expect(loaded.couple.bride).toEqual({ first_name: 'Lucía', last_name: 'Mendoza' });
+    expect(loaded.couple.groom).toEqual({ first_name: 'Andrés', last_name: 'Solís' });
+    expect(loaded.date).toBe('2026-12-12');
+    expect(loaded.venue.name).not.toBe(sheet.venue.name);
+    expect(loaded.synthetic).toBe(true);
   });
 
   it('uses a valid cached sheet offline and refreshes it online', async () => {

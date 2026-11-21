@@ -10,15 +10,15 @@ test.beforeEach(async ({ page }) => {
 test('guest mobile screenshot', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Pareja Alfa');
-  await expect(page.getByText('Jardín El Ejemplo')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Lucía Mendoza');
+  await expect(page.getByText('Hacienda El Sauce')).toBeVisible();
   await page.screenshot({ path: 'docs/screenshots/guest-mobile.png', fullPage: true });
 });
 
 test('guest desktop screenshot', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Pareja Alfa');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Lucía Mendoza');
   await page.screenshot({ path: 'docs/screenshots/guest-desktop.png', fullPage: true });
 });
 
@@ -39,7 +39,7 @@ test('admin desktop screenshot', async ({ page }) => {
 
 test('guest question reaches an error without Firebase config', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Pareja Alfa');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Lucía Mendoza');
   await page.getByLabel('Tu pregunta').fill('¿A qué hora es la ceremonia?');
   await page.getByRole('button', { name: 'Enviar' }).click();
   await expect(page.getByRole('alert')).toContainText('Firebase');
