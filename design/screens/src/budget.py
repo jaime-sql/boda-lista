@@ -22,6 +22,9 @@ MOCK='<span class="mock-chip">Datos de ejemplo · cotizaciones de prueba de data
 Q=next(q for q in QUOTES if q['id']=='vendor-02')
 QUOTE=f"{Q['vendor_name']}\n{Q['description']}\nTotal: {usd(Q['amount_usd'])} USD"
 # What the parser can honestly pull from that text: concepts, no per-line prices.
+# Budget has no config key until it's built: the parse screen uses a DESIGN-EXAMPLE band, not config.json.
+EXAMPLE_BAND={'high':0.85,'cloud_cutoff':0.60}
+def conf_example(pct): return chip(pct,band_from(pct,EXAMPLE_BAND),example=True)
 ITEMS=[('Cena','150 platos',95),('Cóctel','—',91),('Barra de café','—',90),('Menú infantil','Incluido',88)]
 CSS='''
 .wrapd{padding:var(--space-8) var(--space-10) var(--space-12)}
@@ -109,7 +112,7 @@ def impact():
     return f'Con esta cotización, el total cotizado es <b>{usd(TOTAL)}</b> de <b>{usd(PLAN)}</b> planeado (ejemplo).'
 def quote_desktop():
     th=''.join(f'<div class="th">{h}</div>' for h in ['Concepto','Cantidad','Precio','Subtotal','Leído y confianza',''])
-    rows=''.join(f'<div class="first"><b>{n}</b></div><div>{q}</div><div class="num muted">—</div><div class="num muted">incluido</div><div>{DEVICE}{conf(c,"budget")}</div><div>{EDIT}</div>' for n,q,c in ITEMS)
+    rows=''.join(f'<div class="first"><b>{n}</b></div><div>{q}</div><div class="num muted">—</div><div class="num muted">incluido</div><div>{DEVICE}{conf_example(c)}</div><div>{EDIT}</div>' for n,q,c in ITEMS)
     return f'''{topnav("Presupuesto")}<main class="wrapd">
 <div class="ph"><div><p class="eyebrow">Proveedores y presupuesto</p><h1 class="display">Pegar una cotización</h1><p>Pega el texto que te mandó el proveedor. Lo ordenamos para que lo revises.</p></div><div class="row wrap gap-3">{MOCK}</div></div>
 <div class="qgrid">
@@ -120,16 +123,16 @@ def quote_desktop():
 <div class="total"><span>Total de la cotización</span><b>{usd(Q['amount_usd'])}</b></div>
 <div class="impact">{I("wallet",22)}<span>{impact()}</span></div>
 <div class="acts"><button class="btn btn-quiet btn-lg">Descartar</button><button class="btn btn-primary btn-lg">{I("check")}Guardar como “Por aprobar”</button></div></section>
-<p class="sm muted">Los porcentajes de confianza son de ejemplo. El texto viene de <code>data/vendor_quotes.jsonl</code> ({Q['id']}), datos de prueba.</p>
+<p class="sm muted">Confianza y bandas de ejemplo de diseño (presupuesto aún no tiene clave en config.json). El texto viene de <code>data/vendor_quotes.jsonl</code> ({Q['id']}), datos de prueba.</p>
 </div></div></main>'''
 def quote_mobile():
-    cards=''.join(f'<div class="ic"><div><b>{n}</b><div class="sub">{q}</div></div><span class="sub">incluido</span><div class="row2">{DEVICE}{conf(c,"budget")}</div></div>' for n,q,c in ITEMS)
+    cards=''.join(f'<div class="ic"><div><b>{n}</b><div class="sub">{q}</div></div><span class="sub">incluido</span><div class="row2">{DEVICE}{conf_example(c)}</div></div>' for n,q,c in ITEMS)
     return f'''{mobile_appbar()}<main class="wrapd">
 <div class="ph"><div><p class="eyebrow">Presupuesto</p><h1 class="display">Pegar una cotización</h1></div>{MOCK}</div>
 <section class="card pad" style="display:flex;flex-direction:column;gap:var(--space-3)"><label class="label" for="q">Texto de la cotización</label><div id="q" class="input paste" style="height:auto;min-height:180px">{QUOTE}</div><button class="btn btn-primary btn-lg btn-block">{I("sparkle")}Leer cotización</button></section>
 <section class="card" style="margin-top:var(--space-5)"><div class="cardh"><h2>Lo que encontramos</h2>{DEVICE}</div>{vendor_fields().replace('repeat(2,minmax(0,1fr))','1fr')}{cards}
 {NODESG}<div class="total"><span>Total</span><b>{usd(Q['amount_usd'])}</b></div><div class="impact">{I("wallet",22)}<span>Total cotizado: {usd(TOTAL)} de {usd(PLAN)} (ejemplo).</span></div></section>
-<p class="sm muted" style="margin-top:var(--space-3)">Confianza de ejemplo · texto de data/ ({Q['id']}).</p></main>
+<p class="sm muted" style="margin-top:var(--space-3)">Confianza y bandas de ejemplo · texto de data/ ({Q['id']}).</p></main>
 <div class="sticky"><button class="btn btn-secondary btn-lg">Descartar</button><button class="btn btn-primary btn-lg">Guardar</button></div>{mobile_tabs("Presupuesto")}'''
 
 def kpis():

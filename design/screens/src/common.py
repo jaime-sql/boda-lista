@@ -101,19 +101,22 @@ def guest_tabs(active='Preguntar'):
 
 import json as _json, os as _os
 CONFIG=_json.load(open(_os.path.join(_os.path.dirname(__file__),'../../tokens/config.json')))
-# Features not yet in config.json (budget, seating) use the qa entry until ML adds them.
-FEATURE_KEY={'qa':'qa','rsvp':'rsvp','songs':'songs','song':'songs'}
+# Keys are the task values in data/schema.json (guest_question, rsvp, song). No mapping, no fallback.
 MIN_SAMPLE=CONFIG['analytics']['min_sample']  # panel 'Pocos datos aún' minimum (not min_n, which is the eval threshold)
-def cfg(feature='qa'):
-    return CONFIG.get(FEATURE_KEY.get(feature,'qa'),CONFIG['qa'])
-def band(pct,feature='qa'):
-    b=cfg(feature); p=pct/100
+def cfg(task):
+    return CONFIG[task]
+def band_from(pct,b):
+    p=pct/100
     # high >= high; medium >= cloud_cutoff and < high; below cloud_cutoff -> cloud
     return 'high' if p>=b['high'] else ('mid' if p>=b['cloud_cutoff'] else 'low')
+def band(pct,task):
+    return band_from(pct,cfg(task))
 BAND_LABEL={'high':'Alta','mid':'Media','low':'Baja'}
-def conf(pct,feature='qa'):
-    c=band(pct,feature)
-    return f'<span class="conf {c}" data-confidence="{pct/100:.2f}"><i><b></b><b></b><b></b></i>{BAND_LABEL[c]} {pct}%</span>'
+def chip(pct,c,example=False):
+    t=' title="Banda de ejemplo de diseño"' if example else ''
+    return f'<span class="conf {c}" data-confidence="{pct/100:.2f}"{t}><i><b></b><b></b><b></b></i>{BAND_LABEL[c]} {pct}%</span>'
+def conf(pct,task):
+    return chip(pct,band(pct,task))
 
 NAV=['Resumen','Respuestas','Invitados','Presupuesto','Cómo responde la IA']
 def topnav(active):

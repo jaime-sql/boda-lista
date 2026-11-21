@@ -1,9 +1,9 @@
 from common import *
 MIN=MIN_SAMPLE
 # MOCK example data (round, obviously fake). Real panel reads /rollup JSON (source=live only).
-FEAT=[('qa','Preguntas de invitados',156,38),('rsvp','Respuestas (RSVP)',90,30),('songs','Canciones',40,20),('budget','Presupuesto',10,10),('seating','Mesas',4,2)]
-FEAT24=[('qa','Preguntas de invitados',6,2),('rsvp','Respuestas (RSVP)',3,1),('songs','Canciones',0,0),('budget','Presupuesto',0,0),('seating','Mesas',0,0)]
-REASONS=[('no_model','El teléfono no tiene el asistente integrado',50),('low_confidence',f'Respuesta poco segura (menos de {round(cfg("qa")["cloud_cutoff"]*100)}%)',35),('long_input','Texto muy largo para el teléfono',15)]
+FEAT=[('guest_question','Preguntas de invitados',156,38),('rsvp','Respuestas (RSVP)',90,30),('song','Canciones',40,20),('budget','Presupuesto',10,10),('seating','Mesas',4,2)]
+FEAT24=[('guest_question','Preguntas de invitados',6,2),('rsvp','Respuestas (RSVP)',3,1),('song','Canciones',0,0),('budget','Presupuesto',0,0),('seating','Mesas',0,0)]
+REASONS=[('no_model','El teléfono no tiene el asistente integrado',50),('low_confidence',f'Respuesta poco segura (menos de {round(cfg("guest_question")["cloud_cutoff"]*100)}%)',35),('long_input','Texto muy largo para el teléfono',15)]
 
 CSS='''
 .wrapd{padding:var(--space-8) var(--space-10) var(--space-12)}

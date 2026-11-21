@@ -5,7 +5,7 @@ Files in `tokens/`:
 - `tokens.json`: the same values in JSON, for scripts and tests.
 - `fonts/`: Fraunces and Figtree as self-hosted woff2 (latin and latin-ext subsets, OFL-1.1).
 - `LICENSES.md`: fonts, icons and reference repos with their licenses.
-- `config.json`: the **single source** for confidence bands, keyed by feature (`qa`, `rsvp`, `songs`, the same keys as the prompt log and `/rollup`), and for the panel minimum (`analytics.min_sample`). See §4 and §8.
+- `config.json`: the **single source** for confidence bands, keyed by the `task` values in `data/schema.json` (`guest_question`, `rsvp`, `song`; the prompt log, `/rollup` and the eval output use the same keys, with no mapping table), and for the panel minimum (`analytics.min_sample`). See §4 and §8.
 
 The reference component CSS lives in `screens/components.css` and uses semantic tokens only.
 
@@ -175,9 +175,9 @@ This is the key hybrid-AI element. It goes on every AI answer and every parsed r
 - **Thresholds come from one config file, never from CSS.** `tokens/config.json` has this exact shape (ML's eval PR writes the same file on Tue Nov 24):
   ```json
   {
-    "qa":     { "high": 0.85, "cloud_cutoff": 0.60, "min_n": 20 },
-    "rsvp":   { "high": 0.85, "cloud_cutoff": 0.60, "min_n": 20 },
-    "songs":  { "high": 0.85, "cloud_cutoff": 0.60, "min_n": 20 },
+    "guest_question": { "high": 0.85, "cloud_cutoff": 0.60, "min_n": 20 },
+    "rsvp":           { "high": 0.85, "cloud_cutoff": 0.60, "min_n": 20 },
+    "song":           { "high": 0.85, "cloud_cutoff": 0.60, "min_n": 20 },
     "analytics": { "min_sample": 20 }
   }
   ```
@@ -185,8 +185,8 @@ This is the key hybrid-AI element. It goes on every AI answer and every parsed r
   - `min_n` is ML's **eval** threshold (minimum rows to trust a cut-off). It is not used by the UI.
   - `analytics.min_sample` is the **panel's** "Pocos datos aún" minimum (§8). Keep the two separate.
   - Values above are placeholders until ML posts dev-tuned cut-offs (Tue Nov 24, 6 PM SV); nothing else changes.
-  - Features not in the file yet (`budget`, `seating`) fall back to `qa` until ML adds them.
-- **How it works:** the app imports `config.json` once and a single helper picks the band: `band(score, feature)` returns `high | mid | low`, and the component renders `.conf.<band>` with `data-confidence="0.71"`. `components.css` only styles the three classes and contains no numbers. The screen generator (`screens/src/common.py → cfg()/band()/conf()`, `MIN_SAMPLE`) reads the same file, so the mockups follow the config too.
+  - Keys match `data/schema.json → task` exactly. `budget` and `seating` have **no key and no fallback** until they're built; any chip they show in mockups uses a design-example band and is labelled as such.
+- **How it works:** the app imports `config.json` once and a single helper picks the band: `band(score, feature)` returns `high | mid | low`, and the component renders `.conf.<band>` with `data-confidence="0.71"`. `components.css` only styles the three classes and contains no numbers. The screen generator (`screens/src/common.py → cfg(task)/band(pct, task)/conf(pct, task)`, `MIN_SAMPLE`; `cfg` raises on an unknown key) reads the same file, so the mockups follow the config too.
 - **Consistency rule:** a row is routed to the cloud only when its score is below its feature's `cloud_cutoff` (or the reason is `no_model` / `long_input`), so "Media 71% · En la nube" should never appear.
 - **Revisar flag:** rows with `ambiguous: true` or low confidence get the **Revisar** badge (`.badge-review`), a red row tint and a 4px left rule.
 
@@ -285,12 +285,12 @@ Rebuild: `cd screens/src && python3 guest.py && python3 couple.py && python3 ai.
   1. **Respondido en tu teléfono:** the device share as a % plus "300 de 400 respuestas".
   2. **Llamadas a la nube ahorradas:** the count of device answers.
   3. **Rapidez (mediana):** device p50 versus cloud p50, each labelled with the exact badge, plus p95 as a sub-line.
-- **Bar by feature** (`.split`): one row per `feature` (qa → Preguntas de invitados, rsvp → Respuestas (RSVP), songs → Canciones, budget → Presupuesto, seating → Mesas).
+- **Bar by feature** (`.split`): one row per `task` (guest_question → Preguntas de invitados, rsvp → Respuestas (RSVP), song → Canciones). The mockup also shows Presupuesto and Mesas rows as example data; they get real keys only once those features are built.
   - The green segment is `--color-device-fg` (En tu teléfono) and the gold one is `--color-cloud-fg` (En la nube). Both carry white % labels (8.0:1 and 6.8:1), the row carries the text "156 en tu teléfono · 38 en la nube", and the total sits on the right. The meaning never relies on colour alone.
   - The badge legend sits above the rows.
 - **Reasons list** ("¿Por qué fue a la nube?"):
   - `no_model` → "El teléfono no tiene el asistente integrado"
-  - `low_confidence` → "Respuesta poco segura (menos de N%)", where N comes from `config.json → qa.cloud_cutoff`
+  - `low_confidence` → "Respuesta poco segura (menos de N%)", where N comes from `config.json → guest_question.cloud_cutoff`
   - `long_input` → "Texto muy largo para el teléfono"
   - Each reason shows its count, its share and a thin bar. The raw reason key is shown for the team.
 - **Footer:** "Actualizado: 21 nov, 11:00 a. m. (hora SV) · 400 filas", with the model mix as a footnote ("Gemini Nano 300 · Gemini en la nube 100 · Solo uso real").
@@ -317,7 +317,7 @@ Rebuild: `cd screens/src && python3 guest.py && python3 couple.py && python3 ai.
   The pack has no deposit amounts or due dates, so the screens show no "Pagado $" amount and no next-payment date. Nothing is invented to fill them.
 - **Paste a quote** (budget-quote-*), using `vendor-02` Catering La Cosecha ($3,750, `quoted`):
   - The paste field holds the quote's own text: name, description and total.
-  - **What we found:** Proveedor and Categoría (`vendor_type` → Comida), then the concepts the description names (Cena · 150 platos, Cóctel, Barra de café, Menú infantil · Incluido). Each has the "En tu teléfono" badge, a confidence chip (example) and Editar. Prices show "—" / "incluido" because the quote has no per-line prices.
+  - **What we found:** Proveedor and Categoría (`vendor_type` → Comida), then the concepts the description names (Cena · 150 platos, Cóctel, Barra de café, Menú infantil · Incluido). Each has the "En tu teléfono" badge, a confidence chip and Editar. Budget has no `config.json` key, so the chip uses a **design-example band** (0.85 / 0.60, defined in `budget.py`, never read from config) and the footnote says "Confianza y bandas de ejemplo de diseño". Prices show "—" / "incluido" because the quote has no per-line prices.
   - **No sum check, IVA or Revisar prompt:** the quote is a single amount with no line prices, no tax note and nothing ambiguous. Instead, a warning-tinted note reads "Un solo monto, sin desglose…" and suggests asking for a per-plate price. The sum check and the IVA/Revisar prompts stay in the component set (`.check`, `.iva`) for quotes that warrant them.
   - **Impact:** "Con esta cotización, el total cotizado es $12,350 de $13,000 planeado (ejemplo)."
   - Actions: Descartar, and **Guardar como "Por aprobar"**. The short quote is read on the device, so there is no cloud terms card.
