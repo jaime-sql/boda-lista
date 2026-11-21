@@ -22,11 +22,25 @@ export const confidenceConfig = config as ConfidenceConfig;
 
 export type ConfidenceBand = 'high' | 'medium' | 'low';
 
-export function thresholdsFor(feature: Feature): FeatureThresholds {
+function isFeatureKey(feature: string): feature is Feature {
+  const row = (confidenceConfig as unknown as Record<string, unknown>)[feature];
+  return (
+    !!row &&
+    typeof row === 'object' &&
+    'high' in row &&
+    'cloud_cutoff' in row &&
+    'min_n' in row
+  );
+}
+
+export function thresholdsFor(feature: string): FeatureThresholds {
+  if (!isFeatureKey(feature)) {
+    throw new Error(`unknown feature: ${feature}`);
+  }
   return confidenceConfig[feature];
 }
 
-export function confidenceBand(feature: Feature, value: number): ConfidenceBand {
+export function confidenceBand(feature: string, value: number): ConfidenceBand {
   const { high, cloud_cutoff } = thresholdsFor(feature);
   if (value >= high) return 'high';
   if (value >= cloud_cutoff) return 'medium';
@@ -34,6 +48,6 @@ export function confidenceBand(feature: Feature, value: number): ConfidenceBand 
 }
 
 /** Scores below cloud_cutoff are routed to the cloud model. */
-export function isLowConfidence(feature: Feature, value: number): boolean {
+export function isLowConfidence(feature: string, value: number): boolean {
   return value < thresholdsFor(feature).cloud_cutoff;
 }

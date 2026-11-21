@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { FEATURES } from '../ai/types';
 import config from './config.json';
-import { confidenceBand, confidenceConfig, isLowConfidence } from './confidence';
+import { confidenceBand, confidenceConfig, isLowConfidence, thresholdsFor } from './confidence';
 
 type SchemaTask = { properties?: { task?: { const?: string } } };
 
@@ -37,5 +37,13 @@ describe('confidence config', () => {
     expect(confidenceBand('song', cloud_cutoff - 0.01)).toBe('low');
     expect(isLowConfidence('guest_question', cloud_cutoff - 0.01)).toBe(true);
     expect(isLowConfidence('guest_question', cloud_cutoff)).toBe(false);
+  });
+
+  it('throws for an unknown feature key', () => {
+    expect(() => thresholdsFor('qa')).toThrow(/unknown feature: qa/);
+    expect(() => thresholdsFor('songs')).toThrow(/unknown feature: songs/);
+    expect(() => thresholdsFor('budget')).toThrow(/unknown feature: budget/);
+    expect(() => confidenceBand('seating', 0.9)).toThrow(/unknown feature: seating/);
+    expect(() => isLowConfidence('analytics', 0.1)).toThrow(/unknown feature: analytics/);
   });
 });
