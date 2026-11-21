@@ -227,9 +227,11 @@ def test_guest_question_hook_is_exact_and_out_of_scope():
             "text": "¿A qué hora?",
             "lang": "es",
             "answer": UNKNOWN_ANSWER,
+            "out_of_scope": True,
         }
     ]
     summary = score_predictions(golds, [], backend="rules")
     assert summary["n"] == 0
-    assert summary["guest_question"]["status"] == "out_of_scope"
-    assert UNKNOWN_ANSWER in summary["guest_question"]["todo"]
+    assert summary["guest_question"]["n"] == 1
+    assert summary["guest_question"]["by_split"]["test"]["n"] == 1
+    assert summary["guest_question"]["refusal_recall"] == 0.0

@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from evals.guest_questions import answer_confidence, answer_text, is_hallucination
 from evals.parsing import resolve_prediction
 from evals.score import index_predictions, item_correct, load_predictions, score_predictions
 
@@ -243,6 +244,94 @@ def evaluate_task(
     return result
 
 
+def select_guest_question_cutoff(
+    items: list[dict[str, Any]],
+    predictions_by_id: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    """Smallest dev confidence t with hallucination rate <= 2% and n >= min_n.
+
+    Rows below t are the ones the app sends to the cloud. Test rows are refused
+    before any gold answer is scored.
+    """
+    assert_dev_only(items)
+    if not items:
+        raise ValueError("no dev guest_question rows")
+    scored: list[tuple[float | None, bool]] = []
+    for item in items:
+        prediction = predictions_by_id.get(item["id"])
+        scored.append((answer_confidence(prediction), is_hallucination(item, answer_text(prediction))))
+
+    def kept_rate(basis: int) -> tuple[int, float]:
+        kept = [hallucinated for confidence, hallucinated in scored if confidence is not None and _basis(confidence) >= basis]
+        if not kept:
+            return 0, 1.0
+        return len(kept), sum(kept) / len(kept)
+
+    cloud_basis: int | None = None
+    for basis in range(0, 101):
+        count, rate = kept_rate(basis)
+        if count >= MIN_N and rate <= 0.02 + 1e-12:
+            cloud_basis = basis
+            break
+    high_basis: int | None = None
+    for basis in range(0, 101):
+        count, rate = kept_rate(basis)
+        if count >= MIN_N and rate <= 1e-12:
+            high_basis = basis
+            break
+    if cloud_basis is None:
+        cloud_cutoff = 1.01
+        high = 1.01
+    else:
+        cloud_cutoff = cloud_basis / 100
+        high = (high_basis / 100) if high_basis is not None else cloud_cutoff
+        if high < cloud_cutoff:
+            high = cloud_cutoff
+    return {
+        "threshold": cloud_cutoff,
+        "cloud_cutoff": cloud_cutoff,
+        "high": high,
+        "n": len(items),
+        "dev": {"n": len(items), "hallucination_rate_at_cutoff": None if cloud_basis is None else kept_rate(cloud_basis)[1]},
+    }
+
+
+def evaluate_guest_question(
+    *,
+    dev_paths: list[Path] | None,
+    test_paths: list[Path] | None,
+    device_by_id: dict[str, dict[str, Any]] | None,
+    test_by_id: dict[str, dict[str, Any]] | None = None,
+    schema_path: Path | None = None,
+) -> dict[str, Any]:
+    """Select on dev guest_question rows, then score the test split once."""
+    if not dev_paths:
+        return {"status": NO_DEV_NOTE}
+    dev_items = [
+        row
+        for row in load_dev_for_selection(dev_paths, schema_path=schema_path)
+        if row.get("task") == "guest_question"
+    ]
+    if not dev_items:
+        return {"status": NO_DEV_NOTE}
+    if device_by_id is None:
+        raise ValueError("guest_question dev predictions are required when a dev split is present")
+    chosen = select_guest_question_cutoff(dev_items, device_by_id)
+    result = dict(chosen)
+    if not test_paths:
+        return result
+    from evals.guest_questions import score_guest_questions
+    from evals.loader import load_paths
+
+    test_items = [
+        row
+        for row in load_paths(test_paths, schema_path=schema_path)
+        if row.get("task") == "guest_question" and row.get("split") == "test"
+    ]
+    result["test"] = score_guest_questions(test_items, test_by_id or {})
+    return result
+
+
 def build_hybrid_summary(
     *,
     rsvp_dev: list[Path] | None,
@@ -253,9 +342,11 @@ def build_hybrid_summary(
     cloud_dev_path: Path | None,
     device_test_path: Path | None,
     cloud_test_path: Path | None,
+    guest_dev: list[Path] | None = None,
+    guest_test: list[Path] | None = None,
     schema_path: Path | None = None,
 ) -> dict[str, Any]:
-    if not rsvp_dev and not song_dev:
+    if not rsvp_dev and not song_dev and not guest_dev:
         raise NoDevRowsError(NO_DEV_ROWS)
     device_dev = index_predictions(load_predictions(device_dev_path)) if device_dev_path else None
     cloud_dev = index_predictions(load_predictions(cloud_dev_path)) if cloud_dev_path else None
@@ -286,7 +377,14 @@ def build_hybrid_summary(
         no_dev_message=RSVP_NO_DEV,
         schema_path=schema_path,
     )
-    if "threshold" not in rsvp and "threshold" not in song:
+    guest = evaluate_guest_question(
+        dev_paths=guest_dev,
+        test_paths=guest_test,
+        device_by_id=device_dev,
+        test_by_id=device_test,
+        schema_path=schema_path,
+    )
+    if "threshold" not in rsvp and "threshold" not in song and "threshold" not in guest:
         raise NoDevRowsError(NO_DEV_ROWS)
     golds: list[dict[str, Any]] = []
     preds: list[dict[str, Any]] = []
@@ -320,6 +418,7 @@ def build_hybrid_summary(
                 block["on_device_share"] = task_result["on_device_share"]
                 block["threshold"] = task_result["threshold"]
     summary["routing"] = {
+        "guest_question": {key: value for key, value in guest.items() if key != "test"},
         "rsvp": {key: value for key, value in rsvp.items() if key not in {"test_items", "test_predictions"}},
         "song": {key: value for key, value in song.items() if key not in {"test_items", "test_predictions"}},
     }
@@ -368,7 +467,7 @@ def feature_config_from_selection(selection: dict[str, Any]) -> dict[str, Any]:
 def app_config(routing: dict[str, Any]) -> dict[str, Any]:
     """Config keyed by the schema task values. guest_question has no dev split."""
     config = {feature: empty_feature_config() for feature in FEATURES}
-    for feature in ("rsvp", "song"):
+    for feature in FEATURES:
         config[feature] = feature_config_from_selection(routing.get(feature) or {})
     return config
 
@@ -399,12 +498,15 @@ def main() -> None:
     parser.add_argument("--rsvp-test", type=Path, nargs="*", default=None)
     parser.add_argument("--song-dev", type=Path, nargs="*", default=None)
     parser.add_argument("--song-test", type=Path, nargs="*", default=None)
+    parser.add_argument("--guest-dev", type=Path, nargs="*", default=None)
+    parser.add_argument("--guest-test", type=Path, nargs="*", default=None)
     parser.add_argument("--schema", type=Path, default=None)
     parser.add_argument("--out", type=Path)
     args = parser.parse_args()
     rsvp_dev = _existing(args.rsvp_dev)
     song_dev = _existing(args.song_dev)
-    if not rsvp_dev and not song_dev:
+    guest_dev = _existing(args.guest_dev)
+    if not rsvp_dev and not song_dev and not guest_dev:
         raise SystemExit(NO_DEV_ROWS)
     if args.out is None:
         parser.error("the following arguments are required: --out")
@@ -426,6 +528,8 @@ def main() -> None:
             song_dev=song_dev,
             rsvp_test=_existing(args.rsvp_test),
             song_test=_existing(args.song_test),
+            guest_dev=guest_dev,
+            guest_test=_existing(args.guest_test),
             device_dev_path=args.device_dev,
             cloud_dev_path=args.cloud_dev,
             device_test_path=args.device_test,

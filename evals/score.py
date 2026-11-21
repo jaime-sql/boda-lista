@@ -18,7 +18,7 @@ from typing import Any
 
 from rapidfuzz import fuzz
 
-from evals.guest_questions import UNKNOWN_ANSWER
+from evals.guest_questions import score_guest_questions
 from evals.loader import load_paths
 from evals.parsing import resolve_prediction
 from evals.pricing import cost_per_thousand
@@ -392,7 +392,7 @@ def score_predictions(
     smoke: bool = False,
     meta: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    aligned, skipped_questions = align(golds, predictions)
+    aligned, _skipped_questions = align(golds, predictions)
     overall = _block(aligned, with_lang=True)
     grouped_split: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for item in aligned:
@@ -408,14 +408,10 @@ def score_predictions(
         "fuzzy_threshold": FUZZY_THRESHOLD,
         "rsvp": overall["rsvp"],
         "song": overall["song"],
-        "guest_question": {
-            "status": "out_of_scope",
-            "n_skipped": skipped_questions,
-            "todo": (
-                "Exact-match hook only. Unknown gold is "
-                f"{UNKNOWN_ANSWER!r}. See evals/guest_questions.py."
-            ),
-        },
+        "guest_question": score_guest_questions(
+            [gold for gold in golds if gold.get("task") == "guest_question"],
+            predictions,
+        ),
         "by_lang": overall.get("by_lang", {}),
         "by_split": by_split,
     }
