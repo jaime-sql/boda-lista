@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrar · Boda Lista</title>
+<link rel="stylesheet" href="../tokens/tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>body{width:390px} 
+.si{padding:var(--space-4) var(--space-5) var(--space-8);display:flex;flex-direction:column;gap:var(--space-4)}
+.si-art{display:grid;place-items:center;height:180px;border-radius:var(--radius-xl);background:var(--color-surface-alt);position:relative;overflow:hidden}
+.si-art::after{content:"";position:absolute;left:0;right:0;bottom:0;height:8px;background:var(--pattern-weave)}
+.si h1{font-size:var(--text-3xl);margin-top:calc(-1*var(--space-2))}
+.btn-google{background:var(--color-surface);color:var(--color-text);border-color:var(--color-border-strong);gap:var(--space-3)}
+.si-guest{margin-top:var(--space-2);box-shadow:none}
+.si .hint svg{vertical-align:-2px}
+</style>
+</head><body>
+<div class="weave"></div>
+<header class="appbar"><div class="brand" style="font-size:var(--text-lg)"><span class="mono">A&amp;D</span>Boda Lista</div><div class="seg" role="group" aria-label="Idioma"><span class="on">ES</span><span>EN</span></div></header>
+<main class="si">
+  <div class="si-art"><svg width="110" height="144" viewBox="0 0 92 120" fill="none" stroke="var(--color-primary)" stroke-width="1.4" aria-hidden="true"><path d="M46 120V30"/><g fill="var(--color-bg)"><path d="M46 30c-7-4-9-13-4-20 3 6 5 9 4 20z"/><path d="M46 30c7-4 9-13 4-20-3 6-5 9-4 20z"/><path d="M46 48c-10-2-15-10-11-18 4 5 8 7 11 18z"/><path d="M46 48c10-2 15-10 11-18-4 5-8 7-11 18z"/><path d="M46 66c-11 0-18-8-16-17 5 4 10 6 16 17z"/><path d="M46 66c11 0 18-8 16-17-5 4-10 6-16 17z"/></g><path d="M46 112c-10-6-26-6-38 0M46 112c10-6 26-6 38 0" stroke="var(--color-success-fg)"/></svg></div>
+  <p class="eyebrow">Para los novios</p>
+  <h1 class="display">Entra a tu boda</h1>
+  <p>Mira quién confirmó, qué comida piden y las canciones para el DJ.</p>
+  <button class="btn btn-lg btn-block btn-google"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.6 13.2l7.9 6.2C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.5 5.8c4.4-4 6.8-10 6.8-17.2z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.2C.9 16.6 0 20.2 0 24s.9 7.4 2.6 10.8l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.9l-7.9 6.2C6.6 42.6 14.6 48 24 48z"/></svg>Continuar con Google</button>
+  <button class="btn btn-lg btn-block btn-quiet">Probar con la cuenta demo</button>
+  <p class="hint" style="text-align:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg> Solo entran Ana, Diego y quien ellos inviten.</p>
+  <div class="si-guest card pad">
+    <b>¿Eres invitado?</b>
+    <p>No necesitas cuenta. Abre el enlace que te mandaron por WhatsApp.</p>
+    <a class="btn btn-secondary btn-block" style="margin-top:var(--space-3)">Ir a las preguntas</a>
+  </div>
+</main>
+</body></html>
