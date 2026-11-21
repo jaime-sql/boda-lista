@@ -36,7 +36,7 @@ Each call writes one `prompt_logs` document. The document stores sizes and routi
 | `ts` | UTC ISO timestamp |
 | `feature` | `guest_question`, `rsvp`, or `song` (the `task` values in `data/schema.json`) |
 | `route` | `device` or `cloud` |
-| `fallback_reason` | `no_model`, `low_confidence`, `long_input`, or null |
+| `fallback_reason` | `no_model`, `low_confidence`, `long_input`, `no_threshold`, `offline_no_threshold`, or null |
 | `latency_ms` | Inference time |
 | `input_chars` | Characters sent to the model |
 | `output_chars` | Characters returned |
@@ -44,7 +44,7 @@ Each call writes one `prompt_logs` document. The document stores sizes and routi
 | `confidence` | Caller-supplied number, or null |
 | `session_id` | Random id stored in the browser |
 
-Cloud fallback reasons: `no_model` when Gemini Nano is not available, `long_input` when the prompt is over 8000 characters, and `low_confidence` when the caller passes a confidence below that feature's `cloud_cutoff` in `src/config/config.json`. A device route always stores a null reason.
+Cloud fallback reasons: `no_model` when Gemini Nano is not available, `long_input` when the prompt is over 8000 characters, and `low_confidence` when a numeric `cloud_cutoff` is set and the caller passes a confidence below it. If `high` or `cloud_cutoff` is null, there is no band: online answers use the cloud model with reason `no_threshold`, and offline answers use Gemini Nano with reason `offline_no_threshold` and the label "Respuesta poco segura". A device route with an active threshold stores a null reason.
 
 Guests can create those rows. Only a signed-in Google user can read them, from `/admin`. Firestore rules reject every other field, so a client cannot attach the question text.
 

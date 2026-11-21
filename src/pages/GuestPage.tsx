@@ -129,12 +129,15 @@ const COPY = {
   },
 } as const;
 
+export const UNSURE_LABEL = 'Respuesta poco segura';
+
 type ChatTurn = {
   question: string;
   topic: Topic | null;
   answer: string;
   route: Route;
   unknown: boolean;
+  unsure: boolean;
 };
 
 type GuestPageProps = {
@@ -214,6 +217,7 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
           answer,
           route: result.route,
           unknown: answer.length === 0 || isUnknownAnswer(answer),
+          unsure: result.fallbackReason === 'offline_no_threshold',
         },
       ]);
       setQuestion('');
@@ -309,6 +313,7 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
               <div className="bubble-q">{turn.question}</div>
               {turn.unknown ? (
                 <div className="bubble-a bubble-idk">
+                  {turn.unsure ? <p className="unsure-label">{UNSURE_LABEL}</p> : null}
                   <h2 className="display">{UNKNOWN_ANSWER}</h2>
                   <p>{copy.idkBody}</p>
                   <div className="stack gap-2 idk-actions">
@@ -340,6 +345,7 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
                 </div>
               ) : (
                 <div className="bubble-a">
+                  {turn.unsure ? <p className="unsure-label">{UNSURE_LABEL}</p> : null}
                   <p>{turn.answer}</p>
                   <div className="foot">
                     <RouteBadge route={turn.route} />

@@ -38,7 +38,7 @@ describe('DebugPanel', () => {
       ts: '2026-11-21T18:00:00.000Z',
       feature: 'guest_question',
       route: 'device',
-      fallback_reason: 'no_model',
+      fallback_reason: 'no_threshold',
       latency_ms: 15,
       input_chars: 120,
       output_chars: 30,
@@ -68,6 +68,7 @@ describe('DebugPanel', () => {
     expect(screen.getByText('doc-9')).toBeTruthy();
     expect(screen.getByText('gemini-nano')).toBeTruthy();
     expect(screen.getByText('session-xyz123')).toBeTruthy();
+    expect(screen.getByText('no_threshold')).toBeTruthy();
     expect(document.body.textContent).not.toContain(SECRET);
     expect(document.body.textContent).not.toContain('Nombre Falso');
   });

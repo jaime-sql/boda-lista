@@ -50,6 +50,10 @@ function setDevice(status: string | null) {
   window.LanguageModel = { availability: () => Promise.resolve(status) };
 }
 
+function setOnline(online: boolean) {
+  Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => online });
+}
+
 describe('ask', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -57,6 +61,7 @@ describe('ask', () => {
     sessionStorage.clear();
     clearLastPromptLog();
     setDevice('available');
+    setOnline(true);
     mocks.initializeDeviceModel.mockImplementation(() => Promise.resolve());
     mocks.generateContent.mockResolvedValue({
       response: { text: () => ANSWER, inferenceSource: 'on_device' },
@@ -68,26 +73,20 @@ describe('ask', () => {
     }));
   });
 
-  it('calls prefer_on_device and logs analytics without prompt or answer text', async () => {
-    const order: string[] = [];
-    mocks.initializeDeviceModel.mockImplementation(() => {
-      order.push('init');
-      return Promise.resolve();
-    });
+  it('sends online answers to the cloud when no threshold is set', async () => {
     mocks.generateContent.mockImplementation(async () => {
-      order.push('generate');
       return { response: { text: () => ANSWER, inferenceSource: 'on_device' } };
     });
 
     const result = await ask(PROMPT, { feature: 'guest_question', system: 'sistema' });
 
-    expect(order).toEqual(['init', 'generate']);
     expect(getGenerativeModel).toHaveBeenCalledWith(expect.anything(), {
-      mode: InferenceMode.PREFER_ON_DEVICE,
+      mode: InferenceMode.ONLY_IN_CLOUD,
       inCloudParams: { model: 'gemini-3.5-flash-lite' },
     });
-    expect(result.route).toBe('device');
-    expect(result.model).toBe('gemini-nano');
+    expect(result.route).toBe('cloud');
+    expect(result.fallbackReason).toBe('no_threshold');
+    expect(result.model).toBe('gemini-3.5-flash-lite');
     expect(result.text).toBe(ANSWER);
     const payload = mocks.addDoc.mock.calls[0][1] ?? {};
     expect(Object.keys(payload).sort()).toEqual([
@@ -102,55 +101,43 @@ describe('ask', () => {
       'session_id',
       'ts',
     ]);
-    expect(payload.route).toBe('device');
+    expect(payload.route).toBe('cloud');
     expect(payload.feature).toBe('guest_question');
-    expect(payload.fallback_reason).toBeNull();
+    expect(payload.fallback_reason).toBe('no_threshold');
     expect(payload.confidence).toBeNull();
-    expect(payload.model).toBe('gemini-nano');
+    expect(payload.model).toBe('gemini-3.5-flash-lite');
     expect(payload.output_chars).toBe(ANSWER.length);
     expect(payload.input_chars).toBe(`sistema\n\n${PROMPT}`.length);
     expect(String(payload.ts)).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
     const serialized = JSON.stringify(payload);
     expect(serialized).not.toContain(PROMPT);
     expect(serialized).not.toContain(ANSWER);
-    expect(getLastPromptLog()).toMatchObject({ id: 'doc-1', route: 'device', feature: 'guest_question' });
+    expect(getLastPromptLog()).toMatchObject({
+      id: 'doc-1',
+      route: 'cloud',
+      feature: 'guest_question',
+      fallback_reason: 'no_threshold',
+    });
     expect(JSON.stringify(getLastPromptLog())).not.toContain(PROMPT);
   });
 
-  it('records no_model when the SDK uses the cloud and Nano is missing', async () => {
-    setDevice(null);
+  it('answers on device offline when no threshold is set', async () => {
+    setOnline(false);
     mocks.generateContent.mockResolvedValue({
-      response: { text: () => 'nube', inferenceSource: 'in_cloud' },
+      response: { text: () => 'en el teléfono', inferenceSource: 'in_cloud' },
     });
     const result = await ask('hora', { feature: 'guest_question' });
-    expect(result.route).toBe('cloud');
-    expect(result.model).toBe('gemini-3.5-flash-lite');
-    expect(result.fallbackReason).toBe('no_model');
-    expect(mocks.addDoc.mock.calls[0][1]).toMatchObject({ route: 'cloud', fallback_reason: 'no_model' });
-  });
-
-  it('records long_input and low_confidence from the real cloud route', async () => {
-    mocks.generateContent.mockResolvedValue({
-      response: { text: () => 'ok', inferenceSource: 'in_cloud' },
+    expect(getGenerativeModel).toHaveBeenCalledWith(expect.anything(), {
+      mode: InferenceMode.ONLY_ON_DEVICE,
+      inCloudParams: { model: 'gemini-3.5-flash-lite' },
     });
-    const long = await ask('x'.repeat(8001), { feature: 'song' });
-    expect(long.fallbackReason).toBe('long_input');
-
-    const low = await ask('breve', { feature: 'rsvp', confidence: 0.2 });
-    expect(low.route).toBe('cloud');
-    expect(low.fallbackReason).toBe('low_confidence');
-    expect(mocks.addDoc.mock.calls[1][1]).toMatchObject({ confidence: 0.2, fallback_reason: 'low_confidence' });
-  });
-
-  it('falls back to LanguageModel when the SDK omits inferenceSource', async () => {
-    mocks.generateContent.mockResolvedValue({ response: { text: () => 'nano' } });
-    const onDevice = await ask('hola', { feature: 'rsvp' });
-    expect(onDevice.route).toBe('device');
-
-    setDevice('unavailable');
-    const cloud = await ask('hola', { feature: 'song' });
-    expect(cloud.route).toBe('cloud');
-    expect(cloud.fallbackReason).toBe('no_model');
+    expect(result.route).toBe('device');
+    expect(result.fallbackReason).toBe('offline_no_threshold');
+    expect(result.model).toBe('gemini-nano');
+    expect(mocks.addDoc.mock.calls[0][1]).toMatchObject({
+      route: 'device',
+      fallback_reason: 'offline_no_threshold',
+    });
   });
 
   it('returns the answer when the log write fails and still logs a failed call', async () => {

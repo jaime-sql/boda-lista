@@ -2,7 +2,13 @@ export const FEATURES = ['guest_question', 'rsvp', 'song'] as const;
 
 export type Feature = (typeof FEATURES)[number];
 export type Route = 'device' | 'cloud';
-export type FallbackReason = 'no_model' | 'low_confidence' | 'long_input' | null;
+export type FallbackReason =
+  | 'no_model'
+  | 'low_confidence'
+  | 'long_input'
+  | 'no_threshold'
+  | 'offline_no_threshold'
+  | null;
 
 export interface PromptLog {
   ts: string;

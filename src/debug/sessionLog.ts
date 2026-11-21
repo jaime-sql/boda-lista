@@ -22,7 +22,15 @@ function asFeature(value: unknown): Feature | null {
 
 function asFallback(value: unknown): FallbackReason | undefined {
   if (value === null) return null;
-  if (value === 'no_model' || value === 'low_confidence' || value === 'long_input') return value;
+  if (
+    value === 'no_model' ||
+    value === 'low_confidence' ||
+    value === 'long_input' ||
+    value === 'no_threshold' ||
+    value === 'offline_no_threshold'
+  ) {
+    return value;
+  }
   return undefined;
 }
 

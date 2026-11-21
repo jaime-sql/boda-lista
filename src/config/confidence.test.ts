@@ -28,15 +28,11 @@ describe('confidence config', () => {
     expect([...FEATURES].sort()).toEqual(tasks);
     expect(configKeys).not.toEqual(expect.arrayContaining(['qa', 'songs', 'budget', 'seating']));
     expect(confidenceConfig.analytics.min_sample).toBe(20);
-  });
-
-  it('sends scores below cloud_cutoff to the low band', () => {
-    const { high, cloud_cutoff } = confidenceConfig.guest_question;
-    expect(confidenceBand('guest_question', high)).toBe('high');
-    expect(confidenceBand('rsvp', cloud_cutoff)).toBe('medium');
-    expect(confidenceBand('song', cloud_cutoff - 0.01)).toBe('low');
-    expect(isLowConfidence('guest_question', cloud_cutoff - 0.01)).toBe(true);
-    expect(isLowConfidence('guest_question', cloud_cutoff)).toBe(false);
+    expect(confidenceConfig.guest_question).toEqual({ high: null, cloud_cutoff: null, min_n: 20 });
+    expect(confidenceConfig.rsvp.high).toBeNull();
+    expect(confidenceConfig.song.cloud_cutoff).toBeNull();
+    expect(confidenceBand('guest_question', 0.99)).toBeNull();
+    expect(isLowConfidence('guest_question', 0.1)).toBe(false);
   });
 
   it('throws for an unknown feature key', () => {

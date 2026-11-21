@@ -37,7 +37,7 @@ function isValidPromptLog(data) {
     && data.route in ['device', 'cloud']
     && (
       data.fallback_reason == null
-      || data.fallback_reason in ['no_model', 'low_confidence', 'long_input']
+      || data.fallback_reason in ['no_model', 'low_confidence', 'long_input', 'no_threshold', 'offline_no_threshold']
     )
     && data.latency_ms is int
     && data.latency_ms >= 0

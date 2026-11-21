@@ -1,12 +1,7 @@
 import { getAI, getGenerativeModel, GoogleAIBackend, InferenceMode } from 'firebase/ai';
 import { probeDeviceModel } from './device';
-import {
-  classifyFallback,
-  cloudModelName,
-  normalizeConfidence,
-  ON_DEVICE_MODEL_NAME,
-  routeFromInference,
-} from './fallback';
+import { cloudModelName, normalizeConfidence, ON_DEVICE_MODEL_NAME, planRoute } from './fallback';
+import { thresholdsFor } from '../config/confidence';
 import type { AskContext, AskResult, Feature, PromptLog } from './types';
 import { FEATURES } from './types';
 import { rememberPromptLog } from '../debug/sessionLog';
@@ -58,37 +53,58 @@ export async function ask(prompt: string, context: AskContext): Promise<AskResul
   const confidence = normalizeConfidence(context.confidence);
   const sessionId = getSessionId();
   const cloudModel = cloudModelName();
+  const thresholds = thresholdsFor(context.feature);
+  const online = typeof navigator === 'undefined' || navigator.onLine !== false;
   const app = getFirebaseApp();
   const ai = getAI(app, { backend: new GoogleAIBackend() });
+  const deviceStatusPromise = probeDeviceModel();
+  const deviceStatus = await deviceStatusPromise;
+  const plan = planRoute({
+    online,
+    high: thresholds.high,
+    cloudCutoff: thresholds.cloud_cutoff,
+    confidence,
+    deviceStatus,
+    inputChars,
+  });
+  const mode =
+    plan.mode === 'only_in_cloud'
+      ? InferenceMode.ONLY_IN_CLOUD
+      : plan.mode === 'only_on_device'
+        ? InferenceMode.ONLY_ON_DEVICE
+        : InferenceMode.PREFER_ON_DEVICE;
   const model = getGenerativeModel(ai, {
-    mode: InferenceMode.PREFER_ON_DEVICE,
+    mode,
     inCloudParams: { model: cloudModel },
   }) as HybridModel;
 
-  try {
-    const pendingInit = model.initializeDeviceModel(() => undefined);
-    void Promise.resolve(pendingInit).catch(() => undefined);
-  } catch {
-    // Cloud fallback still runs when the on-device model cannot start.
+  if (plan.mode !== 'only_in_cloud') {
+    try {
+      const pendingInit = model.initializeDeviceModel(() => undefined);
+      void Promise.resolve(pendingInit).catch(() => undefined);
+    } catch {
+      // Cloud fallback still runs when the on-device model cannot start.
+    }
   }
 
   const started = performance.now();
   const generation = model.generateContent(fullPrompt);
-  const deviceStatusPromise = probeDeviceModel();
 
   try {
     const result = await generation;
     const latencyMs = Math.max(0, Math.round(performance.now() - started));
     const text = readText(result.response);
-    const deviceStatus = await deviceStatusPromise;
-    const route = routeFromInference(result.response.inferenceSource, deviceStatus);
-    const fallbackReason = classifyFallback({
-      route,
-      feature: context.feature,
+    const settled = planRoute({
+      online,
+      high: thresholds.high,
+      cloudCutoff: thresholds.cloud_cutoff,
+      confidence,
+      inferenceSource: result.response.inferenceSource,
       deviceStatus,
       inputChars,
-      confidence,
     });
+    const route = settled.route;
+    const fallbackReason = settled.reason;
     const modelName = route === 'device' ? ON_DEVICE_MODEL_NAME : cloudModel;
     await safeLog({
       ts: new Date().toISOString(),
@@ -113,15 +129,8 @@ export async function ask(prompt: string, context: AskContext): Promise<AskResul
     };
   } catch (error) {
     const latencyMs = Math.max(0, Math.round(performance.now() - started));
-    const deviceStatus = await deviceStatusPromise;
-    const route = 'cloud' as const;
-    const fallbackReason = classifyFallback({
-      route,
-      feature: context.feature,
-      deviceStatus,
-      inputChars,
-      confidence,
-    });
+    const route = plan.route;
+    const fallbackReason = plan.reason;
     await safeLog({
       ts: new Date().toISOString(),
       feature: context.feature,
@@ -130,7 +139,7 @@ export async function ask(prompt: string, context: AskContext): Promise<AskResul
       latency_ms: latencyMs,
       input_chars: inputChars,
       output_chars: 0,
-      model: cloudModel,
+      model: route === 'device' ? ON_DEVICE_MODEL_NAME : cloudModel,
       confidence,
       session_id: sessionId,
     });

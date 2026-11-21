@@ -140,6 +140,12 @@
   cursor: pointer;
 }
 
+.unsure-label {
+  margin: 0;
+  font-weight: var(--weight-semibold);
+  color: var(--color-warning-fg);
+}
+
 .sr-only {
   position: absolute;
   width: var(--space-1);
