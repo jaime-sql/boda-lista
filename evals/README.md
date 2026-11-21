@@ -17,7 +17,7 @@ python -m pytest evals/tests
 | --- | --- |
 | `rules`, `score`, `threshold`, `report` | This machine, CPU. No GPU and no network. |
 | `gemma` | Modal GPU (default L4). Scales to zero. One remote call batches the file. |
-| `nano` and `cloud` | Desktop Chrome on Jaime's laptop, `evals/nano_runner/index.html`. |
+| `nano` and `cloud` | Desktop Chrome on the owner's laptop, `evals/nano_runner/index.html`. |
 
 `data/schema.json` on main is the row contract (`$defs` for `rsvp`, `song`, `guest_question`, `wedding_info`). The loader validates with that file when it is present and falls back to `evals/schema_builtin.json` when it is missing. `evals/field_map.json` maps old names such as `meal_needs` onto `meal_restrictions`. The row's `split` field wins; a file name that disagrees only warns.
 
@@ -59,7 +59,7 @@ modal run evals/modal_gemma.py --data data/rsvp_replies.jsonl,data/song_requests
 
 The entrypoint prints `estimated_gpu_seconds` (wall clock of the remote call, including model load). The container uses `min_containers=0` and `scaledown_window=5`. Default model id is `google/gemma-3-4b-it`; override with `--model-id`. If you are licensed to use an ungated mirror, start the process with `MODAL_SKIP_HF_SECRET=1` and pass that repo as `--model-id` (for example a mirror under an org you control). `GEMMA_GPU=A10G` selects another GPU. GPU-only list prices used for the optional cost figure are the Modal rates for L4 ($0.000222/s) and A10 ($0.000306/s) from [modal.com/pricing](https://modal.com/pricing). CPU and memory are not included.
 
-Nano and cloud, on Jaime's laptop. Copy `evals/nano_runner/firebase-config.example.json` to `evals/nano_runner/firebase-config.json` (gitignored) and fill the Firebase web config locally. Do not commit it.
+Nano and cloud, on the owner's laptop. Copy `evals/nano_runner/firebase-config.example.json` to `evals/nano_runner/firebase-config.json` (gitignored) and fill the Firebase web config locally. Do not commit it.
 
 ```bash
 python -m http.server 8765

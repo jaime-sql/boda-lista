@@ -31,7 +31,7 @@ def main() -> None:
         )
     if args.backend in {"nano", "cloud"}:
         raise SystemExit(
-            "Nano and cloud Gemini run in desktop Chrome on Jaime's laptop.\n"
+            "Nano and cloud Gemini run in desktop Chrome on the owner's laptop.\n"
             "  python -m http.server 8765\n"
             "  open http://localhost:8765/evals/nano_runner/index.html\n"
             "Use the on-device toggle for nano and the cloud-only toggle for cloud."

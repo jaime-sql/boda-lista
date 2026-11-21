@@ -387,9 +387,11 @@ def write_app_config(routing: dict[str, Any], directory: Path) -> Path:
 
 
 def _existing(paths: list[Path] | None) -> list[Path] | None:
+    """Keep paths that exist. Return None when nothing remains."""
     if not paths:
         return None
-    return paths
+    kept = [path for path in paths if Path(path).exists()]
+    return kept or None
 
 
 def main() -> None:
@@ -403,10 +405,14 @@ def main() -> None:
     parser.add_argument("--song-dev", type=Path, nargs="*", default=None)
     parser.add_argument("--song-test", type=Path, nargs="*", default=None)
     parser.add_argument("--schema", type=Path, default=None)
-    parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--out", type=Path)
     args = parser.parse_args()
-    if not args.rsvp_dev and not args.song_dev:
+    rsvp_dev = _existing(args.rsvp_dev)
+    song_dev = _existing(args.song_dev)
+    if not rsvp_dev and not song_dev:
         raise SystemExit(NO_DEV_ROWS)
+    if args.out is None:
+        parser.error("the following arguments are required: --out")
     missing = [
         name
         for name, value in (
@@ -421,8 +427,8 @@ def main() -> None:
         raise SystemExit("missing " + ", ".join(missing))
     try:
         summary = build_hybrid_summary(
-            rsvp_dev=_existing(args.rsvp_dev),
-            song_dev=_existing(args.song_dev),
+            rsvp_dev=rsvp_dev,
+            song_dev=song_dev,
             rsvp_test=_existing(args.rsvp_test),
             song_test=_existing(args.song_test),
             device_dev_path=args.device_dev,

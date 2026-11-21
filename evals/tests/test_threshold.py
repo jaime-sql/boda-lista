@@ -1,4 +1,6 @@
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -226,3 +228,57 @@ def test_config_file_shape(tmp_path):
     routed, share = route_predictions(items, device, cloud, published["cloud_cutoff"])
     assert share == 0.0
     assert json.loads(routed[0]["raw"])["attending"] == "no"
+
+
+ROOT = Path(__file__).resolve().parents[2]
+README_THRESHOLD_ARGS = [
+    "--rsvp-dev",
+    "data/rsvp_dev_generated.jsonl",
+    "--rsvp-test",
+    "data/rsvp_replies.jsonl",
+    "--song-dev",
+    "data/song_dev_generated.jsonl",
+    "--song-test",
+    "data/song_requests.jsonl",
+    "--device-dev",
+    "evals/results/nano-dev/predictions.jsonl",
+    "--cloud-dev",
+    "evals/results/cloud-dev/predictions.jsonl",
+    "--device-test",
+    "evals/results/nano-test/predictions.jsonl",
+    "--cloud-test",
+    "evals/results/cloud-test/predictions.jsonl",
+    "--out",
+    "evals/results/hybrid/summary.json",
+]
+
+
+def _run_threshold(args: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, "-m", "evals.threshold", *args],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_threshold_refuses_without_dev_rows():
+    cases = [
+        [],
+        README_THRESHOLD_ARGS,
+        ["--out", "evals/results/hybrid/summary.json"],
+    ]
+    assert not (ROOT / "data" / "rsvp_dev_generated.jsonl").exists()
+    assert not (ROOT / "data" / "song_dev_generated.jsonl").exists()
+    assert not (ROOT / "evals" / "results" / "nano-dev" / "predictions.jsonl").exists()
+    for args in cases:
+        result = _run_threshold(args)
+        combined = result.stdout + result.stderr
+        assert result.returncode != 0
+        assert combined.startswith("refusing to run: no dev rows") or "refusing to run: no dev rows" in combined.splitlines()
+        assert "refusing to run: no dev rows" in combined
+        assert "FileNotFoundError" not in combined
+        assert "Traceback" not in combined
+        assert "--out required" not in combined
+        assert "arguments are required: --out" not in combined
