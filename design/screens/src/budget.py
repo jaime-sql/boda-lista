@@ -15,8 +15,9 @@ OPEN=sum(q['amount_usd'] for q in QUOTES if q['status']=='quoted')
 LEFT=PLAN-TOTAL
 assert HIRED+OPEN==TOTAL
 N_HIRED=sum(q['status']=='deposit_paid' for q in QUOTES); N_OPEN=len(QUOTES)-N_HIRED
-ST={'deposit_paid':'<span class="badge badge-yes">'+I("check",16)+'Anticipo pagado</span>','quoted':'<span class="badge badge-pending">'+I("receipt",16)+'Por aprobar</span>'}
-MOCK='<span class="mock-chip">Cotizaciones de prueba · data/ del repo</span>'
+# status mapping: deposit_paid -> Pendiente (anticipo pagado, saldo pendiente); quoted -> Por aprobar. No row is fully paid, so "Pagado" never shows.
+ST={'deposit_paid':'<span class="badge badge-maybe">'+I("clock",16)+'Pendiente</span><span class="sub">Anticipo pagado</span>','quoted':'<span class="badge badge-pending">'+I("receipt",16)+'Por aprobar</span>'}
+MOCK='<span class="mock-chip">Datos de ejemplo · cotizaciones de prueba de data/</span>'
 # The quote shown in the paste flow: catering (status quoted)
 Q=next(q for q in QUOTES if q['id']=='vendor-02')
 QUOTE=f"{Q['vendor_name']}\n{Q['description']}\nTotal: {usd(Q['amount_usd'])} USD"
@@ -147,15 +148,15 @@ def board_desktop():
     return f'''{topnav("Presupuesto")}<main class="wrapd">
 <div class="ph"><div><p class="eyebrow">Proveedores y presupuesto</p><h1 class="display">Presupuesto</h1><p>Total cotizado contra lo planeado, y qué proveedores ya tienen anticipo.</p></div><div class="row wrap gap-3">{MOCK}<button class="btn btn-secondary btn-lg">{I("download")}Exportar CSV</button><button class="btn btn-primary btn-lg">{I("receipt")}Pegar cotización</button></div></div>
 {kpis()}<section class="card pad" style="margin-top:var(--space-6)"><div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:var(--space-3)"><h2 class="display" style="font-size:var(--text-xl);font-weight:600">{usd(TOTAL)} cotizados de {usd(PLAN)} (ejemplo)</h2><span class="muted">{TOTAL*100/PLAN:.0f}% del presupuesto</span></div>{mbar()}</section>
-<div class="bgrid">{cats()}<section class="card"><div class="cardh"><h2>Proveedores · {len(QUOTES)}</h2><div class="filters"><span class="chip on">Todos {len(QUOTES)}</span><span class="chip">Anticipo pagado {N_HIRED}</span><span class="chip">Por aprobar {N_OPEN}</span></div></div><div class="vt">{th}{rows}</div></section></div>
+<div class="bgrid">{cats()}<section class="card"><div class="cardh"><h2>Proveedores · {len(QUOTES)}</h2><div class="filters"><span class="chip on">Todos {len(QUOTES)}</span><span class="chip">Pendiente {N_HIRED}</span><span class="chip">Por aprobar {N_OPEN}</span></div></div><div class="vt">{th}{rows}</div></section></div>
 <p class="sm muted" style="margin-top:var(--space-6)">Montos en dólares (USD). Cotizaciones de prueba de <code>data/vendor_quotes.jsonl</code>; el planeado es un ejemplo de diseño. Los pagos los marcas tú; la app no mueve dinero.</p></main>'''
 def board_mobile():
-    vc=''.join(f'<div class="vc"><div><b>{q["vendor_name"]}</b><div class="sub">{TYPE[q["vendor_type"]]} · {usd(q["amount_usd"])}</div></div>{ST[q["status"]]}<div class="full"><span>{q["description"]}</span></div></div>' for q in QUOTES)
+    vc=''.join(f'<div class="vc"><div><b>{q["vendor_name"]}</b><div class="sub">{TYPE[q["vendor_type"]]} · {usd(q["amount_usd"])}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">{ST[q["status"]]}</div><div class="full"><span>{q["description"]}</span></div></div>' for q in QUOTES)
     return f'''{mobile_appbar()}<main class="wrapd">
 <div class="ph"><div><p class="eyebrow">Proveedores</p><h1 class="display">Presupuesto</h1></div>{MOCK}</div>
 {kpis()}<section class="card pad" style="margin-top:var(--space-4)"><b>{usd(TOTAL)} cotizados de {usd(PLAN)} (ejemplo)</b>{mbar()}</section>
 <button class="btn btn-primary btn-lg btn-block" style="margin-top:var(--space-4)">{I("receipt")}Pegar cotización</button>
-<section class="card" style="margin-top:var(--space-5)"><div class="cardh"><h2>Proveedores · {len(QUOTES)}</h2></div><div class="filters" style="padding:var(--space-3) var(--space-5)"><span class="chip on">Todos</span><span class="chip">Anticipo {N_HIRED}</span><span class="chip">Por aprobar {N_OPEN}</span></div>{vc}</section>
+<section class="card" style="margin-top:var(--space-5)"><div class="cardh"><h2>Proveedores · {len(QUOTES)}</h2></div><div class="filters" style="padding:var(--space-3) var(--space-5)"><span class="chip on">Todos</span><span class="chip">Pendiente {N_HIRED}</span><span class="chip">Por aprobar {N_OPEN}</span></div>{vc}</section>
 <div style="margin-top:var(--space-5)">{cats()}</div></main>{mobile_tabs("Presupuesto")}'''
 for name,html,w,css in [('budget-quote-desktop',quote_desktop(),1440,CSS),('budget-quote-mobile',quote_mobile(),390,CSS+M_CSS),('budget-board-desktop',board_desktop(),1440,CSS),('budget-board-mobile',board_mobile(),390,CSS+M_CSS)]:
     open(f'../{name}.html','w').write(page(name,html,w,css))

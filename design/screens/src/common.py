@@ -102,7 +102,8 @@ def guest_tabs(active='Preguntar'):
 import json as _json, os as _os
 CONFIG=_json.load(open(_os.path.join(_os.path.dirname(__file__),'../../tokens/config.json')))
 # Features not yet in config.json (budget, seating) use the qa entry until ML adds them.
-FEATURE_KEY={'qa':'qa','rsvp':'rsvp','song':'song','songs':'song'}
+FEATURE_KEY={'qa':'qa','rsvp':'rsvp','songs':'songs','song':'songs'}
+MIN_SAMPLE=CONFIG['analytics']['min_sample']  # panel 'Pocos datos aún' minimum (not min_n, which is the eval threshold)
 def cfg(feature='qa'):
     return CONFIG.get(FEATURE_KEY.get(feature,'qa'),CONFIG['qa'])
 def band(pct,feature='qa'):

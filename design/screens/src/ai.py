@@ -1,6 +1,5 @@
 from common import *
-MIN=cfg('qa')['min_n']
-def min_n(k): return cfg(k)['min_n']
+MIN=MIN_SAMPLE
 # MOCK example data (round, obviously fake). Real panel reads /rollup JSON (source=live only).
 FEAT=[('qa','Preguntas de invitados',156,38),('rsvp','Respuestas (RSVP)',90,30),('songs','Canciones',40,20),('budget','Presupuesto',10,10),('seating','Mesas',4,2)]
 FEAT24=[('qa','Preguntas de invitados',6,2),('rsvp','Respuestas (RSVP)',3,1),('songs','Canciones',0,0),('budget','Presupuesto',0,0),('seating','Mesas',0,0)]
@@ -82,7 +81,7 @@ def featbars(state):
         n=d+c
         if state=='loading':
             rows+=f'<div class="frow"><div class="lab"><span class="skeleton" style="width:150px;height:18px"></span></div><span class="skeleton" style="height:28px"></span><span class="skeleton" style="height:16px"></span></div>'; continue
-        if n<min_n(k):
+        if n<MIN:
             bar=f'<div class="split"><span class="few">{"Sin respuestas todavía" if n==0 else "Pocos datos aún · "+str(n)+(" respuesta" if n==1 else " respuestas")}</span></div>'
         else:
             bar=f'<div class="split" role="img" aria-label="{d} en tu teléfono, {c} en la nube"><span class="dev" style="flex:{d}">{round(d*100/n)}%</span><span class="cld" style="flex:{c}">{round(c*100/n)}%</span></div>'

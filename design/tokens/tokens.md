@@ -5,7 +5,7 @@ Files in `tokens/`:
 - `tokens.json`: the same values in JSON, for scripts and tests.
 - `fonts/`: Fraunces and Figtree as self-hosted woff2 (latin and latin-ext subsets, OFL-1.1).
 - `LICENSES.md`: fonts, icons and reference repos with their licenses.
-- `config.json`: the **single source** for confidence bands (`confidence_bands`) and the analytics minimum sample (`analytics.min_sample`). See §4 and §8.
+- `config.json`: the **single source** for confidence bands, keyed by feature (`qa`, `rsvp`, `songs`, the same keys as the prompt log and `/rollup`), and for the panel minimum (`analytics.min_sample`). See §4 and §8.
 
 The reference component CSS lives in `screens/components.css` and uses semantic tokens only.
 
@@ -172,9 +172,22 @@ This is the key hybrid-AI element. It goes on every AI answer and every parsed r
 
 ### Confidence chip and Revisar flag
 - **Chip:** `.conf.high|mid|low` shows a 3-bar meter, a label and a percentage, in green, gold or red.
-- **Thresholds come from one config value, never from CSS.** `tokens/config.json → confidence_bands.<feature>` holds `high`, `mid` and `cloud_handoff` (0–1). Placeholders today: high ≥ 0.85, mid ≥ 0.60, low below that, and cloud hand-off below 0.60. ML replaces them with the dev-tuned cut-offs (due Tue Nov 24, 6 PM SV); nothing else changes.
-- **How it works:** the app imports `config.json` once and a single helper picks the band: `band(score, feature)` returns `high | mid | low`, and the component renders `.conf.<band>` with `data-confidence="0.71"`. `components.css` only styles the three classes and contains no numbers. The screen generator (`screens/src/common.py → band()/conf()`) reads the same file, so the mockups follow the config too.
-- **Consistency rule:** a row is routed to the cloud only when its score is below `cloud_handoff` (or the reason is `no_model` / `long_input`), so "Media 71% · En la nube" should never appear.
+- **Thresholds come from one config file, never from CSS.** `tokens/config.json` has this exact shape (ML's eval PR writes the same file on Tue Nov 24):
+  ```json
+  {
+    "qa":     { "high": 0.85, "cloud_cutoff": 0.60, "min_n": 20 },
+    "rsvp":   { "high": 0.85, "cloud_cutoff": 0.60, "min_n": 20 },
+    "songs":  { "high": 0.85, "cloud_cutoff": 0.60, "min_n": 20 },
+    "analytics": { "min_sample": 20 }
+  }
+  ```
+  - **Bands:** score ≥ `high` → **Alta** (`.conf.high`); `cloud_cutoff` ≤ score < `high` → **Media** (`.conf.mid`); score < `cloud_cutoff` → **Baja** (`.conf.low`) and the item goes **to the cloud**. There is no separate `mid` key.
+  - `min_n` is ML's **eval** threshold (minimum rows to trust a cut-off). It is not used by the UI.
+  - `analytics.min_sample` is the **panel's** "Pocos datos aún" minimum (§8). Keep the two separate.
+  - Values above are placeholders until ML posts dev-tuned cut-offs (Tue Nov 24, 6 PM SV); nothing else changes.
+  - Features not in the file yet (`budget`, `seating`) fall back to `qa` until ML adds them.
+- **How it works:** the app imports `config.json` once and a single helper picks the band: `band(score, feature)` returns `high | mid | low`, and the component renders `.conf.<band>` with `data-confidence="0.71"`. `components.css` only styles the three classes and contains no numbers. The screen generator (`screens/src/common.py → cfg()/band()/conf()`, `MIN_SAMPLE`) reads the same file, so the mockups follow the config too.
+- **Consistency rule:** a row is routed to the cloud only when its score is below its feature's `cloud_cutoff` (or the reason is `no_model` / `long_input`), so "Media 71% · En la nube" should never appear.
 - **Revisar flag:** rows with `ambiguous: true` or low confidence get the **Revisar** badge (`.badge-review`), a red row tint and a 4px left rule.
 
 ### Status badges
@@ -277,11 +290,11 @@ Rebuild: `cd screens/src && python3 guest.py && python3 couple.py && python3 ai.
   - The badge legend sits above the rows.
 - **Reasons list** ("¿Por qué fue a la nube?"):
   - `no_model` → "El teléfono no tiene el asistente integrado"
-  - `low_confidence` → "Respuesta poco segura (menos de N%)", where N comes from `config.json → cloud_handoff`
+  - `low_confidence` → "Respuesta poco segura (menos de N%)", where N comes from `config.json → qa.cloud_cutoff`
   - `long_input` → "Texto muy largo para el teléfono"
   - Each reason shows its count, its share and a thin bar. The raw reason key is shown for the team.
 - **Footer:** "Actualizado: 21 nov, 11:00 a. m. (hora SV) · 400 filas", with the model mix as a footnote ("Gemini Nano 300 · Gemini en la nube 100 · Solo uso real").
-- **Minimum sample** (`config.json → analytics.min_sample`, 20): below it, show the raw count plus the `.few-note` "Pocos datos aún" pill, and never a % or percentile. A feature row below it shows a hatched `.split .few` bar reading "Pocos datos aún · 6 respuestas", or "Sin respuestas todavía" at 0.
+- **Minimum sample** (`config.json → analytics.min_sample`, 20; not `min_n`): below it, show the raw count plus the `.few-note` "Pocos datos aún" pill, and never a % or percentile. A feature row below it shows a hatched `.split .few` bar reading "Pocos datos aún · 6 respuestas", or "Sin respuestas todavía" at 0.
 - **States:**
   | State | File | What shows |
   |---|---|---|
@@ -293,29 +306,29 @@ Rebuild: `cd screens/src && python3 guest.py && python3 couple.py && python3 ai.
 - **Not drawn, per the spec:** the offline state reuses the error pattern with `.banner-offline` ("Sin conexión · mostrando la última copia").
 
 ## 9. Vendors and budget (feature 3)
-> **Quotes are invented example data.** Data's pack (`data/` in jaime-sql/boda-lista) wasn't on `main` or in any open PR when these were drawn, so all 8 vendors, phone numbers (7000-00xx) and amounts are clearly fake. The chip reads "Datos de ejemplo · cotizaciones inventadas". Currency is USD.
+> **The quotes come from the data pack: `data/vendor_quotes.jsonl` on `main` at `643e68d`** (8 rows, `synthetic: true`, USD). They are synthetic test data, so the screens keep the dashed chip "Datos de ejemplo · cotizaciones de prueba de data/". `screens/src/budget.py` reads the repo file when it exists and otherwise a pinned copy, `screens/src/vendor_quotes.snapshot.jsonl`. **Planeado ($13,000) is a design assumption, not data**, and is always labelled "(ejemplo)". Confidence % on the parsed lines are example values.
 
-- **Paste a quote** (budget-quote-*):
-  - The left column has the paste field (WhatsApp, email or copied PDF text), the info banner "Las líneas se leen en tu teléfono…", a primary **Leer cotización** button and a quiet **Borrar** button.
-  - The right column is the parsed review:
-    - Vendor fields: Proveedor, Categoría, Contacto.
-    - **Line items:** Concepto | Cantidad | Precio | Subtotal | Leído y confianza (source badge + `.conf` from config) | Editar (48px icon button).
-    - An ambiguous line (here "Meseros 6 (¿6 h?)") gets the Revisar badge, a red tint and a left rule.
-    - **Deterministic check:** "La suma de líneas ($4,200) coincide con el total de la cotización" in success colours; if the sum mismatches, show it in danger colours with the difference.
-    - **IVA prompt** (Revisar): "“Precios no incluyen IVA.” ¿Sumamos el 13% ($546)?", with the buttons "Sí, sumar IVA" and "No aplica". Never add tax silently.
-    - **Impact line:** "Comida: planeado $4,500. Con esta cotización quedan $300."
-    - Actions: Descartar, and **Guardar en presupuesto** (primary). On mobile they move to a bottom action bar above the tab bar.
-  - The **Condiciones de pago** card carries the "En la nube" badge: long terms go to the cloud (`long_input`) and are summarised as bullets (anticipo, saldo date, change deadline, cancellation).
-- **Budget board** (budget-board-*):
-  - **KPIs:** Planeado $10,000 · Comprometido $8,180 · Pagado $3,750 · **Disponible $1,820** (success tint, with "Si apruebas Petate: $920").
-  - **Money bar:** Pagado (`--color-success-fg`), Por pagar (`--color-warning-fg`) and Disponible (hatched neutral), with amounts inside and a text legend.
-  - **Por categoría:** committed versus planned with a clay bar, "Quedan $X", and notes such as "+ $900 por aprobar".
-  - **Proveedores:** Proveedor/categoría | Total | Pagado | Estado | Próximo pago, with filter chips Todos / Pagado / Pendiente / Por aprobar.
-    - Statuses: **Pagado** `.badge-yes`, **Pendiente** `.badge-maybe` (with the sub-line "Anticipo pagado" when a deposit was paid) and **Por aprobar** `.badge-pending` (a quote not yet accepted, so not counted in Comprometido).
-    - Mobile uses one card per vendor.
-  - The page also has the actions **Exportar CSV** and **Pegar cotización**, and the footnote "Los pagos los marcas tú; la app no mueve dinero."
-- **Data consistency (asserted in `budget.py`):** the categories sum to $10,000 planned and $8,180 committed, and the accepted vendors sum to $8,180 committed and $3,750 paid.
-- **Suggested fields:** `vendor{name, category, contact}`, `items[{concept, qty, unit, unit_price, subtotal, confidence, route, ambiguous}]`, `quote_total`, `tax_note`, `terms_summary{route:"cloud"}`, `status: paid | pending | quote`, `paid_amount`, `next_payment{amount, date}`.
+- **Status mapping** (from the `status` field):
+  | `status` | UI | Badge |
+  |---|---|---|
+  | `deposit_paid` | **Pendiente**, sub-line "Anticipo pagado" (balance still due) | `.badge-maybe` |
+  | `quoted` | **Por aprobar** (not yet accepted) | `.badge-pending` |
+  | (none in the pack) | **Pagado** | `.badge-yes`, reserved for a future `paid` status |
+  The pack has no deposit amounts or due dates, so the screens show no "Pagado $" amount and no next-payment date. Nothing is invented to fill them.
+- **Paste a quote** (budget-quote-*), using `vendor-02` Catering La Cosecha ($3,750, `quoted`):
+  - The paste field holds the quote's own text: name, description and total.
+  - **What we found:** Proveedor and Categoría (`vendor_type` → Comida), then the concepts the description names (Cena · 150 platos, Cóctel, Barra de café, Menú infantil · Incluido). Each has the "En tu teléfono" badge, a confidence chip (example) and Editar. Prices show "—" / "incluido" because the quote has no per-line prices.
+  - **No sum check, IVA or Revisar prompt:** the quote is a single amount with no line prices, no tax note and nothing ambiguous. Instead, a warning-tinted note reads "Un solo monto, sin desglose…" and suggests asking for a per-plate price. The sum check and the IVA/Revisar prompts stay in the component set (`.check`, `.iva`) for quotes that warrant them.
+  - **Impact:** "Con esta cotización, el total cotizado es $12,350 de $13,000 planeado (ejemplo)."
+  - Actions: Descartar, and **Guardar como "Por aprobar"**. The short quote is read on the device, so there is no cloud terms card.
+- **Budget board** (budget-board-*), computed from the 8 rows:
+  - KPIs: **Planeado (ejemplo) $13,000** · **Total cotizado $12,350** (8 proveedores) · **Con anticipo pagado $5,800** (2: Hacienda El Sauce $4,200, Luz de Tarde Studio $1,600) · **Disponible $650** "si apruebas todo lo cotizado". Por aprobar: $6,550 (6).
+  - **Money bar:** Con anticipo pagado $5,800 / Por aprobar $6,550 / Disponible $650.
+  - **Por categoría:** one row per `vendor_type` with its amount and share of the total (Lugar 34%, Comida 30%, Foto y video 13%, Música 7%, Flores 7%, Transporte 4%, Belleza 3%, Pastel 2%).
+  - **Proveedores:** Proveedor/categoría | Total | Estado | Qué incluye (`description`), with filter chips Todos 8 / Pendiente 2 / Por aprobar 6. Mobile uses one card per vendor.
+  - Actions **Exportar CSV** and **Pegar cotización**; the footnote names the source file and says "Los pagos los marcas tú; la app no mueve dinero."
+- **Data consistency (asserted in `budget.py`):** 8 synthetic USD rows; Con anticipo + Por aprobar = Total cotizado ($5,800 + $6,550 = $12,350).
+- **Suggested app fields:** the data-pack row as-is (`id, vendor_type, vendor_name, description, amount_usd, status, currency`), plus parser output `items[{concept, qty, confidence, route}]` and optional `paid_amount` / `next_payment` once the pack has them.
 
 ## 10. Example data label
-Every mock number in `screens/` is fake: the guests, the AI analytics (§8) and the vendor quotes (§9). Only Ana & Diego, Sat Dec 12, 2026, Finca Los Almendros, Santa Tecla are used. No real people or businesses.
+Every mock number in `screens/` is fake: the guests, the AI analytics (§8), and the vendor quotes (§9), which are the data pack's synthetic test rows. Only Ana & Diego, Sat Dec 12, 2026, Finca Los Almendros, Santa Tecla are used. No real people or businesses.
