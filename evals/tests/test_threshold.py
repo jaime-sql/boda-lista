@@ -191,7 +191,7 @@ def _selection(high, cloud_cutoff, n):
 def test_config_file_shape(tmp_path):
     routing = {
         "rsvp": _selection(0.8, 0.55, MIN_N),
-        "songs": {"status": SONG_NO_DEV},
+        "song": {"status": SONG_NO_DEV},
     }
     run_dir = tmp_path / "results" / "dev-run"
     path = write_app_config(routing, run_dir)
@@ -200,7 +200,7 @@ def test_config_file_shape(tmp_path):
     assert "tokens" not in path.parts
 
     config = json.loads(path.read_text(encoding="utf-8"))
-    assert list(config) == ["qa", "rsvp", "songs"]
+    assert list(config) == ["guest_question", "rsvp", "song"]
     assert "analytics" not in json.dumps(config)
 
     published = config["rsvp"]
@@ -210,14 +210,14 @@ def test_config_file_shape(tmp_path):
     assert published["high"] >= published["cloud_cutoff"]
     assert published["min_n"] == 20
 
-    for feature in ("qa", "songs"):
+    for feature in ("guest_question", "song"):
         block = config[feature]
         assert block["high"] is None
         assert block["cloud_cutoff"] is None
         assert block["min_n"] is None
         assert block["note"] == "no dev split"
 
-    short = app_config({"rsvp": _selection(0.9, 0.4, MIN_N - 1), "songs": {}})
+    short = app_config({"rsvp": _selection(0.9, 0.4, MIN_N - 1), "song": {}})
     assert short["rsvp"] == {"high": None, "cloud_cutoff": None, "min_n": 20}
     assert "note" not in short["rsvp"]
 

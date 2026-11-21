@@ -1,8 +1,7 @@
 import json
 from pathlib import Path
 
-from evals.feature_map import TASK_TO_FEATURE
-from evals.threshold import FEATURES
+from evals.threshold import FEATURES, app_config
 
 SCHEMA = Path(__file__).resolve().parents[1] / "schema_builtin.json"
 
@@ -21,10 +20,14 @@ def _task_consts(node) -> list[str]:
     return found
 
 
-def test_schema_task_consts_map_to_features():
+def test_config_keys_equal_schema_task_consts():
     schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
-    tasks = _task_consts(schema)
-    assert tasks == ["rsvp", "song", "guest_question"]
-    for task in tasks:
-        assert TASK_TO_FEATURE[task] in FEATURES
-    assert FEATURES == ("qa", "rsvp", "songs")
+    tasks = set(_task_consts(schema))
+    config = app_config({"rsvp": {}, "song": {}})
+    assert set(config) == tasks
+    assert set(config) == set(FEATURES)
+    assert FEATURES == ("guest_question", "rsvp", "song")
+    assert "budget" not in config
+    assert "seating" not in config
+    assert "qa" not in config
+    assert "songs" not in config

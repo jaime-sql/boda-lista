@@ -13,13 +13,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from evals.feature_map import TASK_TO_FEATURE
 from evals.parsing import resolve_prediction
 from evals.score import index_predictions, item_correct, load_predictions, score_predictions
-
-_RSVP = TASK_TO_FEATURE["rsvp"]
-_SONGS = TASK_TO_FEATURE["song"]
-_QA = TASK_TO_FEATURE["guest_question"]
 
 SONG_NO_DEV = "no song threshold: no dev split"
 RSVP_NO_DEV = "no rsvp threshold: no dev split"
@@ -308,12 +303,13 @@ def build_hybrid_summary(
             "invalid_json_rate": None,
             "latency_ms": {"p50": None, "p95": None, "n": 0},
             "cost_usd_per_1000": None,
-            _RSVP: {},
-            _SONGS: {},
+            "guest_question": {},
+            "rsvp": {},
+            "song": {},
             "by_lang": {},
             "by_split": {},
         }
-    for task_name, task_result in ((_RSVP, rsvp), (_SONGS, song)):
+    for task_name, task_result in (("rsvp", rsvp), ("song", song)):
         if "on_device_share" not in task_result:
             continue
         for block in (
@@ -324,8 +320,8 @@ def build_hybrid_summary(
                 block["on_device_share"] = task_result["on_device_share"]
                 block["threshold"] = task_result["threshold"]
     summary["routing"] = {
-        _RSVP: {key: value for key, value in rsvp.items() if key not in {"test_items", "test_predictions"}},
-        _SONGS: {key: value for key, value in song.items() if key not in {"test_items", "test_predictions"}},
+        "rsvp": {key: value for key, value in rsvp.items() if key not in {"test_items", "test_predictions"}},
+        "song": {key: value for key, value in song.items() if key not in {"test_items", "test_predictions"}},
     }
     summary["cost_basis"] = "hybrid cost is not estimated; on-device calls are free and cloud tokens are uncounted"
     return summary
@@ -333,7 +329,7 @@ def build_hybrid_summary(
 
 # App config shape. min_n is a fixed sample floor, not fit on labels.
 # The harness never writes the app file at tokens/config.json.
-FEATURES = (_QA, _RSVP, _SONGS)
+FEATURES = ("guest_question", "rsvp", "song")
 MIN_N = 20
 NO_DEV_NOTE = "no dev split"
 
@@ -370,10 +366,9 @@ def feature_config_from_selection(selection: dict[str, Any]) -> dict[str, Any]:
 
 
 def app_config(routing: dict[str, Any]) -> dict[str, Any]:
-    """Config keyed by qa, rsvp, and songs. qa has no dev split in this harness."""
+    """Config keyed by the schema task values. guest_question has no dev split."""
     config = {feature: empty_feature_config() for feature in FEATURES}
-    for task in ("rsvp", "song"):
-        feature = TASK_TO_FEATURE[task]
+    for feature in ("rsvp", "song"):
         config[feature] = feature_config_from_selection(routing.get(feature) or {})
     return config
 
@@ -442,8 +437,8 @@ def main() -> None:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     config_path = write_app_config(summary["routing"], args.out.parent)
-    song_status = summary["routing"][_SONGS].get("status", "selected")
-    rsvp_threshold = summary["routing"][_RSVP].get("threshold")
+    song_status = summary["routing"]["song"].get("status", "selected")
+    rsvp_threshold = summary["routing"]["rsvp"].get("threshold")
     print(f"wrote {args.out} rsvp_threshold={rsvp_threshold} song={song_status}")
     print(f"wrote {config_path}")
 

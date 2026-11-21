@@ -11,37 +11,52 @@ import json
 from pathlib import Path
 from typing import Any
 
-from evals.feature_map import TASK_TO_FEATURE
-
 BACKENDS = ("rules", "gemma", "nano", "cloud", "hybrid")
 REPO_ROOT = Path(__file__).resolve().parents[1]
-_RSVP = TASK_TO_FEATURE["rsvp"]
-_SONGS = TASK_TO_FEATURE["song"]
+
+# Older summaries used app feature names. Read them when the task key is absent.
+LEGACY_FEATURE_KEYS = {"song": "songs", "guest_question": "qa"}
 
 # (label, feature or None for a run-level metric, key, kind)
 METRIC_ROWS = (
-    ("RSVP all-fields correct", _RSVP, "all_fields_correct", "rate"),
-    ("RSVP attending accuracy", _RSVP, "attending_accuracy", "rate"),
-    ("RSVP attending macro-F1", _RSVP, "attending_macro_f1", "rate"),
-    ("RSVP party_size exact", _RSVP, "party_size_exact", "rate"),
-    ("RSVP meal_restrictions exact", _RSVP, "meal_restrictions_exact", "rate"),
-    ("RSVP meal_restrictions set-F1", _RSVP, "meal_restrictions_set_f1", "rate"),
-    ("RSVP kids_count exact", _RSVP, "kids_count_exact", "rate"),
-    ("RSVP needs_ride exact", _RSVP, "needs_ride_exact", "rate"),
-    ("RSVP ambiguous exact", _RSVP, "ambiguous_exact", "rate"),
-    ("RSVP force-definite on ambiguous", _RSVP, "ambiguous_force_rate", "rate"),
-    ("Song title+artist accuracy", _SONGS, "title_artist_accuracy", "rate"),
-    ("Song energy accuracy", _SONGS, "energy_accuracy", "rate"),
-    ("Song ambiguous recall", _SONGS, "ambiguous_recall", "rate"),
-    ("Song guess rate on ambiguous", _SONGS, "guess_rate", "rate"),
-    ("Song all-fields correct", _SONGS, "all_fields_correct", "rate"),
+    ("RSVP all-fields correct", "rsvp", "all_fields_correct", "rate"),
+    ("RSVP attending accuracy", "rsvp", "attending_accuracy", "rate"),
+    ("RSVP attending macro-F1", "rsvp", "attending_macro_f1", "rate"),
+    ("RSVP party_size exact", "rsvp", "party_size_exact", "rate"),
+    ("RSVP meal_restrictions exact", "rsvp", "meal_restrictions_exact", "rate"),
+    ("RSVP meal_restrictions set-F1", "rsvp", "meal_restrictions_set_f1", "rate"),
+    ("RSVP kids_count exact", "rsvp", "kids_count_exact", "rate"),
+    ("RSVP needs_ride exact", "rsvp", "needs_ride_exact", "rate"),
+    ("RSVP ambiguous exact", "rsvp", "ambiguous_exact", "rate"),
+    ("RSVP force-definite on ambiguous", "rsvp", "ambiguous_force_rate", "rate"),
+    ("Song title+artist accuracy", "song", "title_artist_accuracy", "rate"),
+    ("Song energy accuracy", "song", "energy_accuracy", "rate"),
+    ("Song ambiguous recall", "song", "ambiguous_recall", "rate"),
+    ("Song guess rate on ambiguous", "song", "guess_rate", "rate"),
+    ("Song all-fields correct", "song", "all_fields_correct", "rate"),
     ("Invalid JSON", None, "invalid_json_rate", "rate"),
     ("Latency p50 (ms)", None, "latency_p50", "ms"),
     ("Latency p95 (ms)", None, "latency_p95", "ms"),
     ("Estimated USD per 1,000", None, "cost_usd_per_1000", "usd"),
-    ("On-device share", _RSVP, "on_device_share", "rate"),
-    ("RSVP threshold", _RSVP, "threshold", "threshold"),
+    ("On-device share", "rsvp", "on_device_share", "rate"),
+    ("RSVP threshold", "rsvp", "threshold", "threshold"),
 )
+
+
+def _lookup(container: dict[str, Any] | None, feature: str) -> Any:
+    """Read a task key, falling back to an older songs/qa summary key."""
+    if not isinstance(container, dict):
+        return None
+    primary = container.get(feature)
+    legacy_name = LEGACY_FEATURE_KEYS.get(feature)
+    legacy = container.get(legacy_name) if legacy_name else None
+    if isinstance(primary, dict) and primary:
+        return primary
+    if isinstance(legacy, dict) and legacy:
+        return legacy
+    if isinstance(primary, dict):
+        return primary
+    return legacy if isinstance(legacy, dict) else None
 
 
 def load_summaries(results_dir: Path) -> dict[str, dict[str, Any]]:
@@ -74,13 +89,13 @@ def _test_section(summary: dict[str, Any] | None) -> dict[str, Any] | None:
 def _task_block(summary: dict[str, Any] | None, task: str) -> dict[str, Any] | None:
     if summary is None:
         return None
-    routing = (summary.get("routing") or {}).get(task) or {}
-    if routing.get("status") and "threshold" not in routing:
+    routing = _lookup(summary.get("routing") or {}, task) or {}
+    if isinstance(routing, dict) and routing.get("status") and "threshold" not in routing:
         return None
     section = _test_section(summary)
     if not section:
         return None
-    block = section.get(task)
+    block = _lookup(section, task)
     return block if isinstance(block, dict) else None
 
 
@@ -121,8 +136,8 @@ def format_metric(value: Any, kind: str, *, ran: bool) -> str:
 def _routing_note(summary: dict[str, Any] | None, task: str) -> str | None:
     if summary is None:
         return None
-    routing = (summary.get("routing") or {}).get(task) or {}
-    status = routing.get("status")
+    routing = _lookup(summary.get("routing") or {}, task) or {}
+    status = routing.get("status") if isinstance(routing, dict) else None
     if isinstance(status, str):
         return status
     return None
@@ -151,13 +166,14 @@ def render_markdown(summaries: dict[str, dict[str, Any]]) -> str:
         lines.append(f"| {label} | " + " | ".join(cells) + " |")
     lines.append("")
     hybrid = summaries.get("hybrid")
-    for feature, label in ((_RSVP, "RSVP"), (_SONGS, "Songs")):
+    for feature, label in (("rsvp", "RSVP"), ("song", "Songs")):
         note = _routing_note(hybrid, feature)
         if note:
             lines.append(f"{label} routing: {note}")
             lines.append("")
-    if hybrid and hybrid.get("routing", {}).get(_RSVP, {}).get("threshold") is not None:
-        threshold = hybrid["routing"][_RSVP]["threshold"]
+    rsvp_routing = _lookup((hybrid or {}).get("routing") or {}, "rsvp") or {}
+    if isinstance(rsvp_routing, dict) and rsvp_routing.get("threshold") is not None:
+        threshold = rsvp_routing["threshold"]
         lines.append(
             f"RSVP threshold {float(threshold):.2f} was selected on the dev split "
             "and applied once to the test split."
@@ -176,8 +192,8 @@ def render_markdown(summaries: dict[str, dict[str, Any]]) -> str:
         by_lang = section.get("by_lang") or {}
         for lang, block in sorted(by_lang.items()):
             wrote_lang = True
-            rsvp = format_metric((block.get(_RSVP) or {}).get("all_fields_correct"), "rate", ran=True)
-            song = format_metric((block.get(_SONGS) or {}).get("all_fields_correct"), "rate", ran=True)
+            rsvp = format_metric((_lookup(block, "rsvp") or {}).get("all_fields_correct"), "rate", ran=True)
+            song = format_metric((_lookup(block, "song") or {}).get("all_fields_correct"), "rate", ran=True)
             lines.append(f"| {backend} | {lang} | {rsvp} | {song} |")
     if not wrote_lang:
         lines.append("| not run | n/a | not run | not run |")

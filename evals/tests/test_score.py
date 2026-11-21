@@ -195,7 +195,7 @@ def test_song_fuzzy_match_guess_rate_and_energy():
         },
     ]
     summary = score_predictions(golds, predictions, backend="nano", smoke=False)
-    song = summary["songs"]
+    song = summary["song"]
     assert song["title_artist_accuracy"] == pytest.approx(1.0)
     assert song["title_artist_n"] == 1
     assert song["energy_accuracy"] == pytest.approx(1.0)
@@ -231,5 +231,5 @@ def test_guest_question_hook_is_exact_and_out_of_scope():
     ]
     summary = score_predictions(golds, [], backend="rules")
     assert summary["n"] == 0
-    assert summary["guest_questions"]["status"] == "out_of_scope"
-    assert UNKNOWN_ANSWER in summary["guest_questions"]["todo"]
+    assert summary["guest_question"]["status"] == "out_of_scope"
+    assert UNKNOWN_ANSWER in summary["guest_question"]["todo"]
