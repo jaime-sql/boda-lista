@@ -2,6 +2,15 @@
 
 Boda Lista is Apache-2.0. The packages below are the direct dependencies in `package.json`. Their licenses are compatible with Apache-2.0 (MIT, Apache-2.0). Transitive packages are pinned in `package-lock.json`. A scan of installed packages found no copyleft-only licenses.
 
+## Fonts
+
+Self-hosted in `src/styles/fonts/` and `design/tokens/fonts/`. License texts: `OFL-Fraunces.txt` and `OFL-Figtree.txt`.
+
+| Font | License | Source |
+| --- | --- | --- |
+| Fraunces | SIL Open Font License 1.1 | https://github.com/undercasetype/Fraunces |
+| Figtree | SIL Open Font License 1.1 | https://github.com/erikdkennedy/figtree |
+
 ## Runtime
 
 | Package | Version | License |

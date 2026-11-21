@@ -84,6 +84,7 @@ export async function ask(prompt: string, context: AskContext): Promise<AskResul
     const route = routeFromInference(result.response.inferenceSource, deviceStatus);
     const fallbackReason = classifyFallback({
       route,
+      feature: context.feature,
       deviceStatus,
       inputChars,
       confidence,
@@ -116,6 +117,7 @@ export async function ask(prompt: string, context: AskContext): Promise<AskResul
     const route = 'cloud' as const;
     const fallbackReason = classifyFallback({
       route,
+      feature: context.feature,
       deviceStatus,
       inputChars,
       confidence,

@@ -3,7 +3,9 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { initFirebase } from './firebase/client';
 import './styles/tokens.css';
-import './styles/global.css';
+import './styles/components.css';
+import './styles/guest.css';
+import './styles/app.css';
 
 initFirebase();
 

@@ -1,23 +1,51 @@
 {
-  "event_name": "Boda de ejemplo",
-  "partners": ["Pareja A", "Pareja B"],
+  "synthetic": true,
+  "disclaimer": "SYNTHETIC / FICTICIO. This fallback sheet is invented for the Boda Lista demo. It does not describe a real wedding or real people.",
+  "couple": {
+    "bride": { "first_name": "Pareja", "last_name": "Alfa" },
+    "groom": { "first_name": "Pareja", "last_name": "Beta" }
+  },
   "date": "2026-09-12",
+  "timezone": "America/El_Salvador",
   "schedule": [
-    { "time": "16:00", "activity": "Ceremonia" },
-    { "time": "17:30", "activity": "Cóctel" },
-    { "time": "19:00", "activity": "Cena" },
-    { "time": "21:00", "activity": "Baile" }
+    { "time": "16:00", "title": "Ceremonia", "place": "Jardín" },
+    { "time": "17:30", "title": "Cóctel", "place": "Terraza" },
+    { "time": "19:00", "title": "Cena", "place": "Salón" },
+    { "time": "21:00", "title": "Baile", "place": "Salón" }
   ],
-  "dress_code": "Formal de día. Evita el blanco.",
   "venue": {
     "name": "Jardín El Ejemplo",
-    "address": "Calle Falsa 123, Ciudad Demo",
+    "address": "Calle Falsa 123",
+    "city": "Ciudad Demo",
+    "country": "País Demo",
+    "ceremony_area": "Jardín",
+    "reception_area": "Salón",
     "notes": "Ceremonia al aire libre. Hay sillas para todo el grupo."
   },
-  "parking": "Estacionamiento gratuito en la calle lateral. Llega 20 minutos antes.",
-  "gifts": "Hay una mesa para sobres. No hay lista pública.",
+  "dress_code": {
+    "summary": "Formal de día. Evita el blanco.",
+    "details": "La ceremonia es al aire libre."
+  },
+  "parking": {
+    "summary": "Estacionamiento gratuito en la calle lateral.",
+    "details": "Llega 20 minutos antes."
+  },
+  "gifts": {
+    "summary": "Hay una mesa para sobres.",
+    "details": "No hay lista pública."
+  },
   "contacts": [
-    { "role": "Coordinación", "phone": "555-0100" },
-    { "role": "Día del evento", "phone": "555-0101" }
+    {
+      "name": "Coordinación Ejemplo",
+      "role": "Coordinación",
+      "email": "coordinacion@boda-ejemplo.example.com",
+      "phone": "555-0100"
+    },
+    {
+      "name": "Día del Evento",
+      "role": "Día del evento",
+      "email": "dia@boda-ejemplo.example.com",
+      "phone": "555-0101"
+    }
   ]
 }

@@ -3,41 +3,63 @@ import type { WeddingInfo } from './types';
 
 const CACHE_KEY = 'boda-lista.wedding-info';
 
-/** Bundled sample used today. */
 export const SAMPLE_SHEET_MODULE = 'src/data/wedding_info.sample.json';
-
-/**
- * Shared data pack added by a later change.
- * Point `loadBundledWeddingInfo` at this path when the file exists.
- * It is not imported yet, so the app builds without a top-level data/ directory.
- */
 export const PACK_SHEET_PATH = 'data/wedding_info.json';
 
 export type SheetOrigin = 'sample' | 'pack';
 
-export function activeSheetOrigin(): SheetOrigin {
-  return 'sample';
-}
+type PackModule = { default: unknown };
+type PackLoader = () => Promise<PackModule>;
 
-export async function loadBundledWeddingInfo(): Promise<WeddingInfo> {
-  const origin = activeSheetOrigin();
-  if (origin === 'sample') {
-    return sample as WeddingInfo;
-  }
-  throw new Error(`The sheet at ${PACK_SHEET_PATH} is not wired yet.`);
-}
+const packLoaders = import.meta.glob<PackModule>('../../data/wedding_info.json');
 
-function isWeddingInfo(value: unknown): value is WeddingInfo {
+const fallbackSheet = sample as WeddingInfo;
+
+export function isWeddingInfo(value: unknown): value is WeddingInfo {
   if (!value || typeof value !== 'object') return false;
   const sheet = value as WeddingInfo;
   return (
+    sheet.synthetic === true &&
+    typeof sheet.disclaimer === 'string' &&
+    typeof sheet.couple?.bride?.first_name === 'string' &&
+    typeof sheet.couple?.groom?.first_name === 'string' &&
+    typeof sheet.date === 'string' &&
+    typeof sheet.timezone === 'string' &&
     Array.isArray(sheet.schedule) &&
-    typeof sheet.dress_code === 'string' &&
     typeof sheet.venue?.name === 'string' &&
-    typeof sheet.parking === 'string' &&
-    typeof sheet.gifts === 'string' &&
+    typeof sheet.venue?.address === 'string' &&
+    typeof sheet.venue?.city === 'string' &&
+    typeof sheet.venue?.country === 'string' &&
+    typeof sheet.dress_code?.summary === 'string' &&
+    typeof sheet.parking?.summary === 'string' &&
+    typeof sheet.gifts?.summary === 'string' &&
     Array.isArray(sheet.contacts)
   );
+}
+
+export function activeSheetOrigin(
+  loaders: Record<string, PackLoader> = packLoaders,
+): SheetOrigin {
+  return Object.keys(loaders).length > 0 ? 'pack' : 'sample';
+}
+
+export async function loadFromLoaders(
+  loaders: Record<string, PackLoader>,
+  fallback: WeddingInfo = fallbackSheet,
+): Promise<WeddingInfo> {
+  const load = Object.values(loaders)[0];
+  if (!load) return fallback;
+  try {
+    const loaded = await load();
+    if (isWeddingInfo(loaded.default)) return loaded.default;
+  } catch {
+    // A missing or unreadable pack falls back to the bundled sample.
+  }
+  return fallback;
+}
+
+export async function loadBundledWeddingInfo(): Promise<WeddingInfo> {
+  return loadFromLoaders(packLoaders, fallbackSheet);
 }
 
 function readCache(storage: Storage): WeddingInfo | null {
@@ -62,6 +84,7 @@ function writeCache(storage: Storage, info: WeddingInfo): void {
 export async function resolveWeddingInfo(options?: {
   storage?: Storage;
   online?: boolean;
+  loaders?: Record<string, PackLoader>;
 }): Promise<WeddingInfo> {
   const storage = options?.storage ?? localStorage;
   const online = options?.online ?? navigator.onLine;
@@ -69,7 +92,7 @@ export async function resolveWeddingInfo(options?: {
     const cached = readCache(storage);
     if (cached) return cached;
   }
-  const bundled = await loadBundledWeddingInfo();
+  const bundled = await loadFromLoaders(options?.loaders ?? packLoaders, fallbackSheet);
   writeCache(storage, bundled);
   return bundled;
 }

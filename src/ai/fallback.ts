@@ -1,7 +1,7 @@
+import { isLowConfidence } from '../config/confidence';
 import type { DeviceAvailability } from './device';
-import type { FallbackReason, Route } from './types';
+import type { FallbackReason, Feature, Route } from './types';
 
-export const LOW_CONFIDENCE_THRESHOLD = 0.5;
 export const ON_DEVICE_INPUT_CHAR_LIMIT = 8000;
 export const ON_DEVICE_MODEL_NAME = 'gemini-nano';
 export const DEFAULT_CLOUD_MODEL = 'gemini-3.5-flash-lite';
@@ -28,6 +28,7 @@ export function routeFromInference(
 
 export function classifyFallback(input: {
   route: Route;
+  feature: Feature;
   deviceStatus: DeviceAvailability;
   inputChars: number;
   confidence: number | null;
@@ -35,7 +36,7 @@ export function classifyFallback(input: {
   if (input.route === 'device') return null;
   if (input.deviceStatus !== 'available') return 'no_model';
   if (input.inputChars > ON_DEVICE_INPUT_CHAR_LIMIT) return 'long_input';
-  if (input.confidence !== null && input.confidence < LOW_CONFIDENCE_THRESHOLD) {
+  if (input.confidence !== null && isLowConfidence(input.feature, input.confidence)) {
     return 'low_confidence';
   }
   return null;

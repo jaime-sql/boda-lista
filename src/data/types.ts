@@ -1,25 +1,49 @@
+export interface PersonName {
+  first_name: string;
+  last_name: string;
+}
+
 export interface ScheduleItem {
   time: string;
-  activity: string;
+  title: string;
+  place?: string;
+  notes?: string;
+}
+
+export interface InfoBlock {
+  summary: string;
+  details?: string;
+  notes?: string;
 }
 
 export interface WeddingContact {
+  name: string;
   role: string;
-  phone: string;
+  email?: string;
+  phone?: string;
 }
 
 export interface WeddingInfo {
-  event_name: string;
-  partners: string[];
+  synthetic: true;
+  disclaimer: string;
+  couple: {
+    bride: PersonName;
+    groom: PersonName;
+  };
   date: string;
+  timezone: string;
   schedule: ScheduleItem[];
-  dress_code: string;
   venue: {
     name: string;
     address: string;
-    notes: string;
+    city: string;
+    country: string;
+    ceremony_area?: string;
+    reception_area?: string;
+    notes?: string;
   };
-  parking: string;
-  gifts: string;
+  dress_code: InfoBlock;
+  parking: InfoBlock;
+  gifts: InfoBlock;
   contacts: WeddingContact[];
 }

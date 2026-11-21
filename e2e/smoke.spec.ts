@@ -10,15 +10,15 @@ test.beforeEach(async ({ page }) => {
 test('guest mobile screenshot', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Preguntas de la boda' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Todavía no hay una respuesta' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Pareja Alfa');
+  await expect(page.getByText('Jardín El Ejemplo')).toBeVisible();
   await page.screenshot({ path: 'docs/screenshots/guest-mobile.png', fullPage: true });
 });
 
 test('guest desktop screenshot', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Preguntas de la boda' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Pareja Alfa');
   await page.screenshot({ path: 'docs/screenshots/guest-desktop.png', fullPage: true });
 });
 
@@ -39,16 +39,9 @@ test('admin desktop screenshot', async ({ page }) => {
 
 test('guest question reaches an error without Firebase config', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Qué cubre la hoja' }).click();
-  await expect(page.getByRole('dialog')).toBeVisible();
-  await page.getByRole('button', { name: 'Cerrar' }).click();
-  await expect(page.getByRole('dialog')).toBeHidden();
-
-  await page.getByRole('button', { name: 'Preguntar' }).click();
-  await expect(page.getByText('Escribe una pregunta.')).toBeVisible();
-
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Pareja Alfa');
   await page.getByLabel('Tu pregunta').fill('¿A qué hora es la ceremonia?');
-  await page.getByRole('button', { name: 'Preguntar' }).click();
+  await page.getByRole('button', { name: 'Enviar' }).click();
   await expect(page.getByRole('alert')).toContainText('Firebase');
 });
 
@@ -56,10 +49,12 @@ test('offline state is visible on both routes', async ({ page, context }) => {
   await page.goto('/');
   await context.setOffline(true);
   await page.evaluate(() => window.dispatchEvent(new Event('offline')));
-  await expect(page.getByRole('heading', { name: 'Sin conexión' })).toBeVisible();
-  await page.getByRole('link', { name: 'Diagnóstico' }).click();
-  await expect(page.getByRole('heading', { name: 'Diagnóstico' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Sin conexión' })).toBeVisible();
+  await expect(page.getByText('Sin señal.')).toBeVisible();
+  await context.setOffline(false);
+  await page.goto('/admin');
+  await context.setOffline(true);
+  await page.evaluate(() => window.dispatchEvent(new Event('offline')));
+  await expect(page.getByText('Sin conexión.')).toBeVisible();
 });
 
 test('production build keeps ?debug=1 hidden', async ({ page }) => {

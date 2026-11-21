@@ -99,8 +99,9 @@ export function AdminPage() {
   }
 
   return (
-    <div className="stack">
-      <h1 className="title">Diagnóstico</h1>
+    <div className="page-narrow">
+      <div className="weave" />
+      <h1 className="page-title">Diagnóstico</h1>
       <p className="muted">La página de invitados no pide cuenta. Aquí se revisa el modelo y los registros.</p>
       <InfoDialog trigger="Qué se guarda" title="Qué se guarda">
         <p>
@@ -111,8 +112,8 @@ export function AdminPage() {
       {!online ? (
         <OfflineState detail="Sin red no se pueden leer los registros. El estado del modelo en el teléfono sí se puede ver." />
       ) : null}
-      <section className="stack" aria-labelledby="device-title">
-        <h2 id="device-title" className="heading">
+      <section className="stack gap-3" aria-labelledby="device-title">
+        <h2 id="device-title" className="section-title">
           Modelo en el dispositivo
         </h2>
         {device === 'loading' ? <LoadingSkeleton label="Revisando el modelo en el dispositivo…" /> : null}
@@ -129,8 +130,8 @@ export function AdminPage() {
           </p>
         ) : null}
       </section>
-      <section className="stack" aria-labelledby="logs-title">
-        <h2 id="logs-title" className="heading">
+      <section className="stack gap-3" aria-labelledby="logs-title">
+        <h2 id="logs-title" className="section-title">
           Últimos registros
         </h2>
         {!authReady ? <LoadingSkeleton label="Revisando la sesión…" /> : null}
@@ -155,16 +156,16 @@ export function AdminPage() {
           />
         ) : null}
         {authReady && !user ? (
-          <button type="button" className="button" onClick={() => void signIn()}>
+          <button type="button" className="btn btn-primary" onClick={() => void signIn()}>
             Entrar con Google
           </button>
         ) : null}
         {user ? (
-          <div className="cluster">
-            <button type="button" className="button button-secondary" onClick={() => void signOutUser()}>
+          <div className="row gap-2">
+            <button type="button" className="btn btn-secondary" onClick={() => void signOutUser()}>
               Salir
             </button>
-            <button type="button" className="button button-secondary" onClick={() => setReload((value) => value + 1)}>
+            <button type="button" className="btn btn-secondary" onClick={() => setReload((value) => value + 1)}>
               Actualizar
             </button>
           </div>
@@ -184,11 +185,11 @@ export function AdminPage() {
           />
         ) : null}
         {user && online && logsStatus === 'ready' && logs.length > 0 ? (
-          <ol className="log-list">
+          <ol className="stack gap-3">
             {logs.map((log, index) => (
-              <li key={`${log.ts}-${log.session_id}-${index}`} className="log-item">
+              <li key={`${log.ts}-${log.session_id}-${index}`} className="card pad stack gap-2">
                 <RouteBadge route={log.route} />
-                <dl className="dl">
+                <dl className="kv">
                   <dt>ts</dt>
                   <dd>{log.ts}</dd>
                   <dt>feature</dt>

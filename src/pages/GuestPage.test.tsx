@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { AskResult } from '../ai/types';
-import { THINKING_LABEL } from '../components/ScreenState';
 import { ToastProvider } from '../components/ToastProvider';
 import { GuestPage } from './GuestPage';
 
@@ -15,7 +14,7 @@ function deferred() {
 }
 
 describe('GuestPage', () => {
-  it('shows the thinking state and the badge for the real route', async () => {
+  it('shows the sheet, the searching state, and the real route', async () => {
     const user = userEvent.setup();
     const pending = deferred();
     const requestAnswer = vi.fn(() => pending.promise);
@@ -25,11 +24,15 @@ describe('GuestPage', () => {
       </ToastProvider>,
     );
 
-    expect(await screen.findByRole('heading', { name: 'Todavía no hay una respuesta' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveProperty(
+      'textContent',
+      expect.stringContaining('Pareja Alfa'),
+    );
+    expect(screen.getByText(/Jardín El Ejemplo/)).toBeTruthy();
+    expect(screen.queryByText(/Hacienda El Sauce/)).toBeNull();
     await user.type(screen.getByLabelText('Tu pregunta'), '¿A qué hora es la ceremonia?');
-    await user.click(screen.getByRole('button', { name: 'Preguntar' }));
-    expect(await screen.findByText(THINKING_LABEL)).toBeTruthy();
-    expect(THINKING_LABEL).toBe('pensando en tu teléfono...');
+    await user.click(screen.getByRole('button', { name: 'Enviar' }));
+    expect(await screen.findByText('Buscando en la información de la boda…')).toBeTruthy();
 
     pending.resolve({
       text: 'La ceremonia es a las 16:00.',
@@ -42,7 +45,6 @@ describe('GuestPage', () => {
     });
 
     expect(await screen.findByText('En la nube')).toBeTruthy();
-    expect(screen.queryByText('En tu teléfono')).toBeNull();
     expect(screen.getByText('La ceremonia es a las 16:00.')).toBeTruthy();
   });
 });

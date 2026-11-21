@@ -1,7 +1,7 @@
 /* Boda Lista design tokens: Direction A "Izote y Barro"
  * Drop-in for src/styles/tokens.css. Fonts: copy tokens/fonts/ next to this file (./fonts/).
  * Switching direction = replace this file + fonts/. Components must reference only --color-*, --font-*,
- * --text-*, --space-*, --radius-*, --shadow-*, --duration-*/--ease-* (never --palette-*). */
+ * --text-*, --space-*, --radius-*, --shadow-*, --duration-* and --ease-* (never --palette-*). */
 
 @font-face {
   font-family: 'Figtree';

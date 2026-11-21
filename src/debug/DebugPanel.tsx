@@ -50,8 +50,8 @@ export function DebugPanel() {
   }, [attempt, online]);
 
   return (
-    <section className="stack" aria-labelledby="debug-title">
-      <h2 id="debug-title" className="heading">
+    <section className="stack gap-3" aria-labelledby="debug-title">
+      <h2 id="debug-title" className="section-title">
         Depuración
       </h2>
       <p className="muted">Solo en vistas previas y en desarrollo. No muestra la pregunta ni la respuesta.</p>
@@ -67,7 +67,7 @@ export function DebugPanel() {
         />
       ) : null}
       {status === 'ready' && device && tokenPresence ? (
-        <dl className="dl">
+        <dl className="kv">
           <dt>Disponibilidad del modelo</dt>
           <dd>
             {DEVICE_LABEL[device]} ({device})
@@ -87,9 +87,9 @@ export function DebugPanel() {
         />
       ) : null}
       {lastLog ? (
-        <div className="stack">
-          <h3 className="heading">Último prompt_log</h3>
-          <dl className="dl">
+        <div className="card pad stack gap-2">
+          <h3 className="section-title">Último prompt_log</h3>
+          <dl className="kv">
             <dt>id</dt>
             <dd>{lastLog.id}</dd>
             <dt>ts</dt>

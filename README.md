@@ -4,7 +4,7 @@ Boda Lista helps a couple run their wedding from a desktop Chrome web app. Featu
 
 The app is a `#BuildHybridAI` 2026 entry. Prompts go through Firebase AI Logic hybrid inference. Chrome uses Gemini Nano on the device when that model is available, and the same call falls back to the cloud Gemini model when it is not.
 
-The interface is Spanish first and also accepts English questions. Visual values are placeholders in `src/styles/tokens.css` and `src/styles/tokens.json` so a designer can restyle the app without editing components.
+The interface is Spanish first and also accepts English questions. Direction A, Izote y Barro, lives in `src/styles/tokens.css` and `src/styles/tokens.json`.
 
 ## Hybrid architecture
 
@@ -50,7 +50,7 @@ Guests can create those rows. Only a signed-in Google user can read them, from `
 
 ## Wedding sheet
 
-The sample event lives at `src/data/wedding_info.sample.json`. Names, the address, and the phone numbers are fake. `src/data/loadWeddingInfo.ts` loads that sample today and can later point at `data/wedding_info.json` when the shared data pack lands. The loader caches the sheet in `localStorage` so an on-device answer can still use it offline.
+The wedding sheet follows `data/schema.json` (`wedding_info`: `synthetic`, `disclaimer`, `couple.bride` / `couple.groom`, `date`, `timezone`, `schedule`, `venue`, `dress_code`, `parking`, `gifts`, `contacts`). `src/data/loadWeddingInfo.ts` loads `data/wedding_info.json` when that file is in the build, and otherwise uses `src/data/wedding_info.sample.json`. The loader caches the sheet in `localStorage` so an on-device answer can still use it offline. Names, addresses, and phone numbers in both sheets are synthetic.
 
 If the sheet does not cover a question, the only acceptable answer is:
 
@@ -126,7 +126,7 @@ Optional build secrets, used when present: `VITE_FIREBASE_API_KEY`, `VITE_FIREBA
 
 ## Design tokens
 
-Colors, fonts, spacing, radii, and type sizes live in `src/styles/tokens.css` and the matching `src/styles/tokens.json`. Components only reference those variables. The current values are neutral placeholders: body text is 18px and controls are at least 48px tall so contrast and tap size stay at the accessibility floor until the design tokens arrive.
+Direction A, Izote y Barro, is applied. Colors, type, spacing, and radii live in `src/styles/tokens.css` and `src/styles/tokens.json`. Fraunces and Figtree are self-hosted from `src/styles/fonts/` under the SIL Open Font License 1.1. Components use the semantic tokens only. Body text is 18px and controls are at least 48px. The screen references stay in `design/`.
 
 ## Testing instructions for judges
 
@@ -167,3 +167,23 @@ npm run lhci
 `npm test` covers the hybrid wrapper with a mocked SDK. `npm run test:e2e` writes mobile (390×844) and desktop screenshots to `docs/screenshots/`. `npm run lhci` fails if accessibility drops below 95.
 
 Third-party licenses are listed in `THIRD_PARTY.md`. The project license is Apache-2.0 (`LICENSE`).
+
+## Credits
+
+Direction A (Izote y Barro) uses Fraunces and Figtree, both SIL Open Font License 1.1, self-hosted in this repo. UI icons and the izote illustration were drawn for Boda Lista and are Apache-2.0, same as the project. The full asset list is `design/tokens/LICENSES.md`.
+
+These open-source wedding sites informed the product. Nothing was copied from them: no code, assets, illustrations, photos, or copy. Details and demos are in `design/sources.md`.
+
+- [rampatra/wedding-website](https://github.com/rampatra/wedding-website) is GPL-3.0. Ideas only, no code: an invite-code RSVP flow, plus add-to-calendar and directions next to the event.
+- [dewanakl/undangan](https://github.com/dewanakl/undangan) is MIT. Idea: a personal link per guest.
+- [sakeenah-wedding/template](https://github.com/sakeenah-wedding/template) is Apache-2.0. Idea: a restrained card and one accent action.
+- [retros-id/simple-wedding-invitation](https://github.com/retros-id/simple-wedding-invitation). Idea: a typography-led hero with a wide-tracked date.
+- [nguyenhuugiatri/iphone-wedding-invitation](https://github.com/nguyenhuugiatri/iphone-wedding-invitation). Idea: glanceable details, which became the quick-question chips.
+- [ZEDLABS-TEKNOLOGI-INDONESIA/wedding-invitation](https://github.com/ZEDLABS-TEKNOLOGI-INDONESIA/wedding-invitation). Idea: an organizer view for the sheet. Its public demo did not respond when checked.
+- [Starloss/wedding-invitation](https://github.com/Starloss/wedding-invitation) is MIT. Idea: one RSVP form per family, and song requests.
+- [xsrazy/Wedify](https://github.com/xsrazy/Wedify) is MIT. Idea: a playlist-style song list.
+- [lfrocharod/wedding-invitation-template](https://github.com/lfrocharod/wedding-invitation-template) is MIT for code. Its illustrations are not licensed and were not used. Idea: a headcount and an RSVP deadline line.
+- [thesurajdev/wedding-invite](https://github.com/thesurajdev/wedding-invite) is MIT for code. Photos and music were excluded. Idea: add to calendar, and a reduced-motion setting.
+- [nerln/wedding-invite-starter-kit](https://github.com/nerln/wedding-invite-starter-kit) is MIT. Idea: a maps button, a letter-spaced date, and reduced motion.
+
+smith-wedding-demo has no license and was not used.

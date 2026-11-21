@@ -11,19 +11,49 @@ describe('hybrid route and fallback', () => {
 
   it('labels why a cloud response happened', () => {
     expect(
-      classifyFallback({ route: 'device', deviceStatus: 'unsupported', inputChars: 10, confidence: 0.1 }),
+      classifyFallback({
+        route: 'device',
+        feature: 'qa',
+        deviceStatus: 'unsupported',
+        inputChars: 10,
+        confidence: 0.1,
+      }),
     ).toBeNull();
     expect(
-      classifyFallback({ route: 'cloud', deviceStatus: 'unavailable', inputChars: 10, confidence: null }),
+      classifyFallback({
+        route: 'cloud',
+        feature: 'qa',
+        deviceStatus: 'unavailable',
+        inputChars: 10,
+        confidence: null,
+      }),
     ).toBe('no_model');
     expect(
-      classifyFallback({ route: 'cloud', deviceStatus: 'available', inputChars: 8001, confidence: null }),
+      classifyFallback({
+        route: 'cloud',
+        feature: 'songs',
+        deviceStatus: 'available',
+        inputChars: 8001,
+        confidence: null,
+      }),
     ).toBe('long_input');
     expect(
-      classifyFallback({ route: 'cloud', deviceStatus: 'available', inputChars: 20, confidence: 0.2 }),
+      classifyFallback({
+        route: 'cloud',
+        feature: 'rsvp',
+        deviceStatus: 'available',
+        inputChars: 20,
+        confidence: 0.2,
+      }),
     ).toBe('low_confidence');
     expect(
-      classifyFallback({ route: 'cloud', deviceStatus: 'available', inputChars: 20, confidence: 0.5 }),
+      classifyFallback({
+        route: 'cloud',
+        feature: 'qa',
+        deviceStatus: 'available',
+        inputChars: 20,
+        confidence: 0.6,
+      }),
     ).toBeNull();
   });
 
