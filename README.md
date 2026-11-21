@@ -34,7 +34,7 @@ Each call writes one `prompt_logs` document. The document stores sizes and routi
 | Field | Value |
 | --- | --- |
 | `ts` | UTC ISO timestamp |
-| `feature` | `qa`, `rsvp`, `songs`, `budget`, or `seating` |
+| `feature` | `guest_question`, `rsvp`, or `song` (the `task` values in `data/schema.json`) |
 | `route` | `device` or `cloud` |
 | `fallback_reason` | `no_model`, `low_confidence`, `long_input`, or null |
 | `latency_ms` | Inference time |
@@ -44,7 +44,7 @@ Each call writes one `prompt_logs` document. The document stores sizes and routi
 | `confidence` | Caller-supplied number, or null |
 | `session_id` | Random id stored in the browser |
 
-Cloud fallback reasons: `no_model` when Gemini Nano is not available, `long_input` when the prompt is over 8000 characters, and `low_confidence` when the caller passes a confidence below 0.5. A device route always stores a null reason.
+Cloud fallback reasons: `no_model` when Gemini Nano is not available, `long_input` when the prompt is over 8000 characters, and `low_confidence` when the caller passes a confidence below that feature's `cloud_cutoff` in `src/config/config.json`. A device route always stores a null reason.
 
 Guests can create those rows. Only a signed-in Google user can read them, from `/admin`. Firestore rules reject every other field, so a client cannot attach the question text.
 

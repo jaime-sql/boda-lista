@@ -79,7 +79,7 @@ describe('ask', () => {
       return { response: { text: () => ANSWER, inferenceSource: 'on_device' } };
     });
 
-    const result = await ask(PROMPT, { feature: 'qa', system: 'sistema' });
+    const result = await ask(PROMPT, { feature: 'guest_question', system: 'sistema' });
 
     expect(order).toEqual(['init', 'generate']);
     expect(getGenerativeModel).toHaveBeenCalledWith(expect.anything(), {
@@ -103,7 +103,7 @@ describe('ask', () => {
       'ts',
     ]);
     expect(payload.route).toBe('device');
-    expect(payload.feature).toBe('qa');
+    expect(payload.feature).toBe('guest_question');
     expect(payload.fallback_reason).toBeNull();
     expect(payload.confidence).toBeNull();
     expect(payload.model).toBe('gemini-nano');
@@ -113,7 +113,7 @@ describe('ask', () => {
     const serialized = JSON.stringify(payload);
     expect(serialized).not.toContain(PROMPT);
     expect(serialized).not.toContain(ANSWER);
-    expect(getLastPromptLog()).toMatchObject({ id: 'doc-1', route: 'device', feature: 'qa' });
+    expect(getLastPromptLog()).toMatchObject({ id: 'doc-1', route: 'device', feature: 'guest_question' });
     expect(JSON.stringify(getLastPromptLog())).not.toContain(PROMPT);
   });
 
@@ -122,7 +122,7 @@ describe('ask', () => {
     mocks.generateContent.mockResolvedValue({
       response: { text: () => 'nube', inferenceSource: 'in_cloud' },
     });
-    const result = await ask('hora', { feature: 'qa' });
+    const result = await ask('hora', { feature: 'guest_question' });
     expect(result.route).toBe('cloud');
     expect(result.model).toBe('gemini-3.5-flash-lite');
     expect(result.fallbackReason).toBe('no_model');
@@ -133,10 +133,10 @@ describe('ask', () => {
     mocks.generateContent.mockResolvedValue({
       response: { text: () => 'ok', inferenceSource: 'in_cloud' },
     });
-    const long = await ask('x'.repeat(8001), { feature: 'songs' });
+    const long = await ask('x'.repeat(8001), { feature: 'song' });
     expect(long.fallbackReason).toBe('long_input');
 
-    const low = await ask('breve', { feature: 'budget', confidence: 0.2 });
+    const low = await ask('breve', { feature: 'rsvp', confidence: 0.2 });
     expect(low.route).toBe('cloud');
     expect(low.fallbackReason).toBe('low_confidence');
     expect(mocks.addDoc.mock.calls[1][1]).toMatchObject({ confidence: 0.2, fallback_reason: 'low_confidence' });
@@ -148,27 +148,27 @@ describe('ask', () => {
     expect(onDevice.route).toBe('device');
 
     setDevice('unavailable');
-    const cloud = await ask('hola', { feature: 'seating' });
+    const cloud = await ask('hola', { feature: 'song' });
     expect(cloud.route).toBe('cloud');
     expect(cloud.fallbackReason).toBe('no_model');
   });
 
   it('returns the answer when the log write fails and still logs a failed call', async () => {
     mocks.addDoc.mockRejectedValueOnce(new Error('denied'));
-    const result = await ask(PROMPT, { feature: 'qa' });
+    const result = await ask(PROMPT, { feature: 'guest_question' });
     expect(result.text).toBe(ANSWER);
     expect(getLastPromptLog()).toBeNull();
 
     mocks.generateContent.mockRejectedValueOnce(new Error('boom'));
     mocks.addDoc.mockResolvedValueOnce({ id: 'doc-err' });
-    await expect(ask(PROMPT, { feature: 'qa' })).rejects.toThrow('boom');
+    await expect(ask(PROMPT, { feature: 'guest_question' })).rejects.toThrow('boom');
     expect(mocks.addDoc.mock.calls.at(-1)?.[1]).toMatchObject({ output_chars: 0 });
     expect(JSON.stringify(mocks.addDoc.mock.calls.at(-1)?.[1])).not.toContain(PROMPT);
   });
 
   it('reuses one session id', async () => {
-    await ask('uno', { feature: 'qa' });
-    await ask('dos', { feature: 'qa' });
+    await ask('uno', { feature: 'guest_question' });
+    await ask('dos', { feature: 'guest_question' });
     const first = mocks.addDoc.mock.calls[0][1]?.session_id;
     const second = mocks.addDoc.mock.calls[1][1]?.session_id;
     expect(first).toBe(second);

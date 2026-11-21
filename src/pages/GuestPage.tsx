@@ -202,7 +202,7 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
     setActiveTopic(topic);
     try {
       const result = await requestAnswer(trimmed, {
-        feature: 'qa',
+        feature: 'guest_question',
         system: buildQaSystemPrompt(sheet),
       });
       const answer = result.text.trim();

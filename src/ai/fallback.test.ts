@@ -13,7 +13,7 @@ describe('hybrid route and fallback', () => {
     expect(
       classifyFallback({
         route: 'device',
-        feature: 'qa',
+        feature: 'guest_question',
         deviceStatus: 'unsupported',
         inputChars: 10,
         confidence: 0.1,
@@ -22,7 +22,7 @@ describe('hybrid route and fallback', () => {
     expect(
       classifyFallback({
         route: 'cloud',
-        feature: 'qa',
+        feature: 'guest_question',
         deviceStatus: 'unavailable',
         inputChars: 10,
         confidence: null,
@@ -31,7 +31,7 @@ describe('hybrid route and fallback', () => {
     expect(
       classifyFallback({
         route: 'cloud',
-        feature: 'songs',
+        feature: 'song',
         deviceStatus: 'available',
         inputChars: 8001,
         confidence: null,
@@ -49,7 +49,7 @@ describe('hybrid route and fallback', () => {
     expect(
       classifyFallback({
         route: 'cloud',
-        feature: 'qa',
+        feature: 'guest_question',
         deviceStatus: 'available',
         inputChars: 20,
         confidence: 0.6,

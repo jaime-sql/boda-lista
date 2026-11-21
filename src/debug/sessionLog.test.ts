@@ -3,7 +3,7 @@ import { clearLastPromptLog, getLastPromptLog, reloadLastPromptLog, rememberProm
 
 const entry = {
   ts: '2026-11-21T18:00:00.000Z',
-  feature: 'qa' as const,
+  feature: 'guest_question' as const,
   route: 'device' as const,
   fallback_reason: null,
   latency_ms: 12,

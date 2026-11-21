@@ -1,36 +1,39 @@
 import type { Feature } from '../ai/types';
+import config from './config.json';
 
-export interface ConfidenceCutoffs {
-  /** Inclusive lower bound for the high band. */
+export interface FeatureThresholds {
   high: number;
-  /** Inclusive lower bound for the medium band. Anything below is low. */
-  medium: number;
+  cloud_cutoff: number;
+  min_n: number;
 }
 
-export const DEFAULT_CONFIDENCE_CUTOFFS: ConfidenceCutoffs = {
-  high: 0.85,
-  medium: 0.6,
-};
+export interface AnalyticsThresholds {
+  min_sample: number;
+}
 
-export const CONFIDENCE_CUTOFFS: Partial<Record<Feature, ConfidenceCutoffs>> = {
-  qa: { high: 0.85, medium: 0.6 },
-  rsvp: { high: 0.85, medium: 0.6 },
-  songs: { high: 0.85, medium: 0.6 },
-};
+export interface ConfidenceConfig {
+  guest_question: FeatureThresholds;
+  rsvp: FeatureThresholds;
+  song: FeatureThresholds;
+  analytics: AnalyticsThresholds;
+}
+
+export const confidenceConfig = config as ConfidenceConfig;
 
 export type ConfidenceBand = 'high' | 'medium' | 'low';
 
-export function cutoffsFor(feature: Feature): ConfidenceCutoffs {
-  return CONFIDENCE_CUTOFFS[feature] ?? DEFAULT_CONFIDENCE_CUTOFFS;
+export function thresholdsFor(feature: Feature): FeatureThresholds {
+  return confidenceConfig[feature];
 }
 
 export function confidenceBand(feature: Feature, value: number): ConfidenceBand {
-  const cutoffs = cutoffsFor(feature);
-  if (value >= cutoffs.high) return 'high';
-  if (value >= cutoffs.medium) return 'medium';
+  const { high, cloud_cutoff } = thresholdsFor(feature);
+  if (value >= high) return 'high';
+  if (value >= cloud_cutoff) return 'medium';
   return 'low';
 }
 
+/** Scores below cloud_cutoff are routed to the cloud model. */
 export function isLowConfidence(feature: Feature, value: number): boolean {
-  return confidenceBand(feature, value) === 'low';
+  return value < thresholdsFor(feature).cloud_cutoff;
 }

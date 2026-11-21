@@ -1,4 +1,4 @@
-export const FEATURES = ['qa', 'rsvp', 'songs', 'budget', 'seating'] as const;
+export const FEATURES = ['guest_question', 'rsvp', 'song'] as const;
 
 export type Feature = (typeof FEATURES)[number];
 export type Route = 'device' | 'cloud';

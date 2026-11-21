@@ -33,7 +33,7 @@ function isValidPromptLog(data) {
     && data.ts is string
     && data.ts.size() >= 20
     && data.ts.size() <= 40
-    && data.feature in ['qa', 'rsvp', 'songs', 'budget', 'seating']
+    && data.feature in ['guest_question', 'rsvp', 'song']
     && data.route in ['device', 'cloud']
     && (
       data.fallback_reason == null

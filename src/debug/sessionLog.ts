@@ -1,4 +1,4 @@
-import type { FallbackReason, Feature, PromptLog, Route } from '../ai/types';
+import { FEATURES, type FallbackReason, type Feature, type PromptLog, type Route } from '../ai/types';
 
 const STORAGE_KEY = 'boda-lista.last-prompt-log';
 
@@ -14,14 +14,8 @@ function asRoute(value: unknown): Route | null {
 }
 
 function asFeature(value: unknown): Feature | null {
-  if (
-    value === 'qa' ||
-    value === 'rsvp' ||
-    value === 'songs' ||
-    value === 'budget' ||
-    value === 'seating'
-  ) {
-    return value;
+  if (typeof value === 'string' && (FEATURES as readonly string[]).includes(value)) {
+    return value as Feature;
   }
   return null;
 }

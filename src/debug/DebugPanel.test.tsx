@@ -36,7 +36,7 @@ describe('DebugPanel', () => {
   it('shows availability, presence, and the local log on a preview build', async () => {
     rememberPromptLog('doc-9', {
       ts: '2026-11-21T18:00:00.000Z',
-      feature: 'qa',
+      feature: 'guest_question',
       route: 'device',
       fallback_reason: 'no_model',
       latency_ms: 15,
