@@ -17,7 +17,7 @@ qa('guest-qa-offline','Preguntas · sin señal',f'''
 
 qa('guest-qa-idk','Preguntas · pregúntale a los novios',f'''
 <div class="bubble-q">¿Puedo llevar a mi perrito?</div>
-<div class="bubble-a" style="border-color:var(--color-accent);background:var(--color-accent-soft)"><h4>Eso no lo sabemos todavía</h4>No está en la información de la boda y no queremos inventarte una respuesta. Mejor pregúntale directo a Ana y Diego.
+<div class="bubble-a" style="border-color:var(--color-accent);background:var(--color-accent-soft)"><h4>No tengo esa información, pregúntale a los novios</h4>No está en la información de la boda y no queremos inventarte una respuesta.
 <div class="stack gap-2" style="margin-top:var(--space-4)"><a class="btn btn-primary btn-block">{I("chat")}Pregúntale a los novios</a><a class="btn btn-quiet btn-block">Hacer otra pregunta</a></div>
 <div class="foot">{DEVICE}<span class="sm muted">Sin fuente</span></div></div>''')
 

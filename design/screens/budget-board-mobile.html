@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>budget-board-mobile · Boda Lista</title>
+<link rel="stylesheet" href="../tokens/tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>body{width:390px} 
+.wrapd{padding:var(--space-8) var(--space-10) var(--space-12)}
+.ph{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-6);margin-bottom:var(--space-6);flex-wrap:wrap}
+.ph h1{font-size:var(--text-3xl);margin-top:var(--space-1)}
+.ph p{color:var(--color-text-muted);margin-top:var(--space-1)}
+.cardh{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding:var(--space-5) var(--space-6);border-bottom:1px solid var(--color-border);flex-wrap:wrap}
+.cardh h2{font-family:var(--font-display);font-variation-settings:var(--font-display-variation);font-weight:600;font-size:var(--text-xl)}
+.paste{font-size:var(--text-sm);line-height:1.55;resize:none;min-height:560px;font-family:var(--font-body);padding:var(--space-4);white-space:pre-wrap;align-items:flex-start}
+.qgrid{display:grid;grid-template-columns:minmax(0,0.85fr) minmax(0,1.4fr);gap:var(--space-6);align-items:start}
+.items{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1.1fr) 90px 110px minmax(0,1.5fr) 72px;align-items:stretch}
+.items>div{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--color-border);min-height:72px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.items>.th{min-height:auto;font-size:var(--text-sm);font-weight:600;color:var(--color-text-muted);border-bottom:1.5px solid var(--color-border-strong)}
+.items>.rv{background:var(--color-danger-bg)}
+.items>.rv.first{box-shadow:inset 4px 0 0 var(--color-danger-fg)}
+.num{justify-content:flex-end;font-variant-numeric:tabular-nums}
+.check{display:flex;gap:var(--space-3);align-items:center;padding:var(--space-4) var(--space-6);background:var(--color-success-bg);color:var(--color-success-fg);font-weight:600}
+.total{display:flex;justify-content:space-between;align-items:baseline;padding:var(--space-4) var(--space-6);border-top:1px solid var(--color-border)}
+.total b{font-family:var(--font-display);font-variation-settings:var(--font-display-variation);font-size:var(--text-3xl);font-weight:600}
+.iva{margin:var(--space-4) var(--space-6);padding:var(--space-4);border-radius:var(--radius-md);background:var(--color-danger-bg);display:flex;gap:var(--space-4);align-items:center;flex-wrap:wrap}
+.iva p{flex:1;min-width:240px}
+.terms{list-style:none;padding:0 var(--space-6) var(--space-4)}
+.terms li{display:flex;gap:var(--space-3);padding:var(--space-2) 0;align-items:flex-start}
+.terms li svg{flex:none;margin-top:3px;color:var(--color-cloud-fg)}
+.vf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-4);padding:var(--space-5) var(--space-6)}
+.impact{padding:var(--space-4) var(--space-6);border-top:1px solid var(--color-border);display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap}
+.acts{display:flex;gap:var(--space-3);justify-content:flex-end;padding:var(--space-5) var(--space-6);border-top:1px solid var(--color-border);flex-wrap:wrap}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-4)}
+.kpi{padding:var(--space-5) var(--space-6);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:4px}
+.kpi .k{font-size:var(--text-sm);font-weight:600;color:var(--color-text-muted)}
+.kpi .v{font-family:var(--font-display);font-variation-settings:var(--font-display-variation);font-weight:600;font-size:var(--text-4xl);line-height:1.05;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:var(--text-sm);color:var(--color-text-muted)}
+.kpi.hl{background:var(--color-success-bg)}
+.money-bar{display:flex;height:36px;border-radius:var(--radius-sm);overflow:hidden;gap:2px;margin:var(--space-5) 0 var(--space-2)}
+.money-bar span{display:flex;align-items:center;padding:0 12px;font-weight:700;font-size:var(--text-sm);white-space:nowrap}
+.mb-paid{background:var(--color-success-fg);color:var(--color-on-primary)}
+.mb-due{background:var(--color-warning-fg);color:var(--color-on-primary)}
+.mb-left{background:repeating-linear-gradient(135deg,var(--color-neutral-bg) 0 8px,var(--color-surface) 8px 16px);border:1px dashed var(--color-border-strong);color:var(--color-text)}
+.mlegend{display:flex;gap:var(--space-5);flex-wrap:wrap;font-size:var(--text-sm);color:var(--color-text-muted)}
+.mlegend i{display:inline-block;width:14px;height:14px;border-radius:4px;margin-right:6px;vertical-align:-2px}
+.bgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.9fr);gap:var(--space-6);margin-top:var(--space-6);align-items:start}
+.cat{padding:var(--space-3) var(--space-6);border-top:1px solid var(--color-border);display:grid;grid-template-columns:1fr auto;gap:6px var(--space-3)}
+.cat .bar{grid-column:1/-1;height:12px;border-radius:999px;background:var(--color-neutral-bg);overflow:hidden}
+.cat .bar i{display:block;height:100%;background:var(--color-primary)}
+.cat .meta{grid-column:1/-1;font-size:var(--text-sm);color:var(--color-text-muted);display:flex;justify-content:space-between;gap:var(--space-3);flex-wrap:wrap}
+.vt{display:grid;grid-template-columns:minmax(0,1.3fr) 100px minmax(0,1fr) minmax(0,1.9fr)}
+.vt>div{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--color-border);min-height:72px;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.vt>.th{min-height:auto;font-size:var(--text-sm);font-weight:600;color:var(--color-text-muted);border-bottom:1.5px solid var(--color-border-strong)}
+.vt .badge{align-self:flex-start}
+.vt .sub{font-size:var(--text-sm);color:var(--color-text-muted)}
+.vt .num{align-items:flex-end;text-align:right}
+.filters{display:flex;gap:var(--space-2);flex-wrap:wrap}
+
+.wrapd{padding:var(--space-4) var(--space-4) var(--space-8)}
+.ph h1{font-size:var(--text-2xl)}
+.kpis{grid-template-columns:1fr 1fr;gap:var(--space-3)}
+.kpi{padding:var(--space-4)}
+.kpi .v{font-size:var(--text-2xl)}
+.bgrid,.qgrid{grid-template-columns:1fr}
+.cardh{padding:var(--space-4) var(--space-5)}
+.cat{padding:var(--space-3) var(--space-5)}
+.vc{padding:var(--space-4) var(--space-5);border-top:1px solid var(--color-border);display:grid;grid-template-columns:1fr auto;gap:6px var(--space-3);align-items:center}
+.vc .sub{font-size:var(--text-sm);color:var(--color-text-muted)}
+.vc .full{grid-column:1/-1;display:flex;justify-content:space-between;gap:var(--space-3);font-size:var(--text-sm);color:var(--color-text-muted);flex-wrap:wrap}
+.paste{min-height:0;height:240px;overflow:hidden}
+.ic{padding:var(--space-4) var(--space-5);border-top:1px solid var(--color-border);display:grid;grid-template-columns:1fr auto;gap:8px var(--space-3)}
+.ic.rv{background:var(--color-danger-bg);box-shadow:inset 4px 0 0 var(--color-danger-fg)}
+.ic .row2{grid-column:1/-1;display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center}
+.ic .sub{font-size:var(--text-sm);color:var(--color-text-muted)}
+.iva,.check{margin-left:var(--space-5);margin-right:var(--space-5)}
+.check{margin:0;padding:var(--space-4) var(--space-5)}
+.terms{padding:0 var(--space-5) var(--space-4)}
+.vf{grid-template-columns:1fr;padding:var(--space-4) var(--space-5)}
+.total,.impact{padding-left:var(--space-5);padding-right:var(--space-5)}
+.sticky{position:static;background:var(--color-surface);border-top:1px solid var(--color-border);padding:var(--space-3) var(--space-4);display:flex;gap:var(--space-3)}
+.sticky .btn{flex:1}
+</style>
+</head><body>
+<div class="weave"></div><header class="appbar"><div class="brand" style="font-size:var(--text-lg)"><span class="mono">A&amp;D</span>Boda Lista</div><div class="seg" role="group" aria-label="Idioma"><span class="on">ES</span><span>EN</span></div></header><main class="wrapd">
+<div class="ph"><div><p class="eyebrow">Proveedores</p><h1 class="display">Presupuesto</h1></div><span class="mock-chip">Cotizaciones de prueba · data/ del repo</span></div>
+<div class="kpis"><div class="card kpi"><span class="k">Planeado (ejemplo)</span><span class="v">$13,000</span><span class="s">Supuesto de diseño</span></div><div class="card kpi"><span class="k">Total cotizado</span><span class="v">$12,350</span><span class="s">8 proveedores</span></div><div class="card kpi"><span class="k">Con anticipo pagado</span><span class="v">$5,800</span><span class="s">2 proveedores · Por aprobar: $6,550</span></div><div class="card kpi hl"><span class="k">Disponible</span><span class="v">$650</span><span class="s">Si apruebas todo lo cotizado</span></div></div><section class="card pad" style="margin-top:var(--space-4)"><b>$12,350 cotizados de $13,000 (ejemplo)</b><div class="money-bar" role="img" aria-label="Con anticipo $5,800, por aprobar $6,550, disponible $650 de $13,000"><span class="mb-paid" style="flex:5800">$5,800</span><span class="mb-due" style="flex:6550">$6,550</span><span class="mb-left" style="flex:650">$650</span></div><div class="mlegend"><span><i style="background:var(--color-success-fg)"></i>Con anticipo pagado</span><span><i style="background:var(--color-warning-fg)"></i>Por aprobar</span><span><i style="background:var(--color-neutral-bg);border:1px dashed var(--color-border-strong)"></i>Disponible</span></div></section>
+<button class="btn btn-primary btn-lg btn-block" style="margin-top:var(--space-4)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3"/></svg>Pegar cotización</button>
+<section class="card" style="margin-top:var(--space-5)"><div class="cardh"><h2>Proveedores · 8</h2></div><div class="filters" style="padding:var(--space-3) var(--space-5)"><span class="chip on">Todos</span><span class="chip">Anticipo 2</span><span class="chip">Por aprobar 6</span></div><div class="vc"><div><b>Hacienda El Sauce</b><div class="sub">Lugar · $4,200</div></div><span class="badge badge-yes"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Anticipo pagado</span><div class="full"><span>Renta de jardín, salón y mobiliario base, 12 dic 2026.</span></div></div><div class="vc"><div><b>Catering La Cosecha</b><div class="sub">Comida · $3,750</div></div><span class="badge badge-pending"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3"/></svg>Por aprobar</span><div class="full"><span>Cena de 150 platos, cóctel y barra de café. Menú infantil incluido.</span></div></div><div class="vc"><div><b>DJ Río Viejo</b><div class="sub">Música · $900</div></div><span class="badge badge-pending"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3"/></svg>Por aprobar</span><div class="full"><span>Sonido, iluminación y 6 horas de música, incluye ceremonia.</span></div></div><div class="vc"><div><b>Luz de Tarde Studio</b><div class="sub">Foto y video · $1,600</div></div><span class="badge badge-yes"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Anticipo pagado</span><div class="full"><span>Foto y video, 10 horas, álbum digital.</span></div></div><div class="vc"><div><b>Izotes y Cera</b><div class="sub">Flores · $850</div></div><span class="badge badge-pending"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3"/></svg>Por aprobar</span><div class="full"><span>Arreglos de ceremonia, centros de mesa y ramo.</span></div></div><div class="vc"><div><b>Pastelería Nube de Coco</b><div class="sub">Pastel · $280</div></div><span class="badge badge-pending"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3"/></svg>Por aprobar</span><div class="full"><span>Pastel de tres pisos, vainilla y tres leches, 150 porciones.</span></div></div><div class="vc"><div><b>Studio Barro y Rosa</b><div class="sub">Belleza · $320</div></div><span class="badge badge-pending"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3"/></svg>Por aprobar</span><div class="full"><span>Maquillaje y peinado de novia más 3 madrinas.</span></div></div><div class="vc"><div><b>Shuttle El Encuentro</b><div class="sub">Transporte · $450</div></div><span class="badge badge-pending"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3"/></svg>Por aprobar</span><div class="full"><span>Dos micros, ruta centro comercial–hacienda, 15:00–01:15.</span></div></div></section>
+<div style="margin-top:var(--space-5)"><section class="card"><div class="cardh"><h2>Por categoría</h2></div><div class="cat"><b>Lugar</b><span class="money">$4,200</span><span class="bar"><i style="width:34%"></i></span><span class="meta"><span>34% del total cotizado</span></span></div><div class="cat"><b>Comida</b><span class="money">$3,750</span><span class="bar"><i style="width:30%"></i></span><span class="meta"><span>30% del total cotizado</span></span></div><div class="cat"><b>Foto y video</b><span class="money">$1,600</span><span class="bar"><i style="width:13%"></i></span><span class="meta"><span>13% del total cotizado</span></span></div><div class="cat"><b>Música</b><span class="money">$900</span><span class="bar"><i style="width:7%"></i></span><span class="meta"><span>7% del total cotizado</span></span></div><div class="cat"><b>Flores</b><span class="money">$850</span><span class="bar"><i style="width:7%"></i></span><span class="meta"><span>7% del total cotizado</span></span></div><div class="cat"><b>Transporte</b><span class="money">$450</span><span class="bar"><i style="width:4%"></i></span><span class="meta"><span>4% del total cotizado</span></span></div><div class="cat"><b>Belleza</b><span class="money">$320</span><span class="bar"><i style="width:3%"></i></span><span class="meta"><span>3% del total cotizado</span></span></div><div class="cat"><b>Pastel</b><span class="money">$280</span><span class="bar"><i style="width:2%"></i></span><span class="meta"><span>2% del total cotizado</span></span></div></section></div></main><nav class="tabbar" style="grid-template-columns:repeat(4,1fr)"><a class=""><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-5h4v5"/></svg>Inicio</a><a class=""><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 14.2A5 5 0 0 1 21.5 19"/></svg>Invitados</a><a class="on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3"/><rect x="4" y="8" width="16" height="11.5" rx="2.5"/><path d="M15.5 13.8h.01"/></svg>Presupuesto</a><a class=""><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V4M4 20h16M8 16v-5M12 16V8M16 16v-3"/></svg>IA</a></nav>
+</body></html>

@@ -1,8 +1,5 @@
 from common import *
-def topnav(active):
-    links=['Resumen','Respuestas','Invitados','Canciones','Información']
-    l=''.join(f'<a class="{"on" if x==active else ""}">{x}</a>' for x in links)
-    return f'''<div class="weave"></div><header class="topnav"><div class="brand"><span class="mono">A&amp;D</span>Boda Lista</div><nav class="navlinks">{l}</nav>{LANG}<div class="avatar" aria-label="Ana">AN</div></header>'''
+CONF=conf
 D_CSS='''
 .wrapd{padding:var(--space-8) var(--space-10) var(--space-12)}
 .ph{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-6);margin-bottom:var(--space-6)}
@@ -34,7 +31,7 @@ def row(name,quote,att,ps,kids,meal,ride,conf,src,state='todo',review=False,song
     if state=='done': act=f'<span class="done">{I("check",18,2.6)}Confirmado</span>'
     else: act=f'<div class="acts"><button class="btn btn-quiet">{I("edit",18)}Editar</button><button class="btn btn-primary">{I("check",18,2.6)}Confirmar</button></div>'
     flag=(f'<span class="sub" style="margin-top:4px">{I("music",16)} {song}</span>' if song else '')+(f'<div style="margin-top:6px">{REVIEW}</div>' if review else '')
-    return f'''<tr class="{"review" if review else ""}"><td><b>{name}</b><span class="quote">“{quote}”</span>{flag}</td><td><span class="badge {attb}">{att}</span></td><td class="num">{ps}<span class="sub">{kn(kids)}</span></td><td>{meal}</td><td>{ride}</td><td><span class="conf {conf[0]}"><i><b></b><b></b><b></b></i>{c} {conf[1]}%</span><div style="margin-top:6px">{srcb}</div></td><td>{act}</td></tr>'''
+    return f'''<tr class="{"review" if review else ""}"><td><b>{name}</b><span class="quote">“{quote}”</span>{flag}</td><td><span class="badge {attb}">{att}</span></td><td class="num">{ps}<span class="sub">{kn(kids)}</span></td><td>{meal}</td><td>{ride}</td><td>{CONF(conf[1],'rsvp')}<div style="margin-top:6px">{srcb}</div></td><td>{act}</td></tr>'''
 rows=''.join([
  row('Tía Marta Fuentes','vamos 3, mi hijo es vegetariano','Sí',3,1,'Vegetariano','No',('high',96),'d','done'),
  row('Rolando Vides','no podemos llegar, abrazos','No',0,0,'—','—',('high',98),'d','done'),
@@ -43,7 +40,7 @@ rows=''.join([
  row('Efraín Portillo','todavía no sé si me dan permiso…','Tal vez',1,0,'—','No',('mid',74),'d'),
  row('Lucía Hernández',"We'll be there! 2 of us, no shellfish",'Sí',2,0,'Alergia: mariscos','No',('high',92),'d'),
  row('Beto Rivas','con los cipotes, somos 5. ¿hay bus?','Sí',5,'¿3?','—','Sí',('low',48),'c',review=True),
- row('Ximena Ayala','👍 ahí nos vemos!! pongan Suavemente','Sí','¿1?',0,'—','No',('mid',61),'c',review=True,song='Suavemente · Elvis Crespo'),
+ row('Ximena Ayala','👍 ahí nos vemos!! pongan Suavemente','Sí','¿1?',0,'—','No',('low',57),'c',review=True,song='Suavemente · Elvis Crespo'),
 ])
 body=topnav('Respuestas')+f'''<main class="wrapd">
 <div class="ph"><div><p class="eyebrow">Respuestas de WhatsApp</p><h1 class="display">Pega los mensajes y revisa</h1><p>Leemos cada mensaje en tu dispositivo. Solo los dudosos van a la nube, sin números de teléfono.</p></div>
@@ -200,7 +197,7 @@ body=f'''<div class="weave"></div><header class="appbar"><div class="brand" styl
   <div class="stack gap-2 pad" style="border-top:1px solid var(--color-border)"><button class="btn btn-primary btn-block">{I("download")}Descargar CSV</button><button class="btn btn-secondary btn-block">{I("print")}Imprimir</button></div>
  </section>
 </main>
-<nav class="tabbar" style="grid-template-columns:repeat(4,1fr)"><a>{I("home",24)}Resumen</a><a>{I("chat",24)}Respuestas</a><a class="on">{I("users",24)}Invitados</a><a>{I("music",24)}Canciones</a></nav>'''
+{mobile_tabs("Invitados")}'''
 HM_CSS=D_CSS+DJ_CSS+M_CSS+'''
 .mwrap{padding:var(--space-4) var(--space-4) var(--space-6)}
 .kpim{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)}

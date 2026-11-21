@@ -6,7 +6,7 @@ async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch(executable_path='/usr/bin/google-chrome')
         for k in files:
-            w=1440 if k.startswith(('couple','headcount-desktop')) else 390
+            w=1440 if (k.startswith('couple') or k.endswith('desktop')) else 390
             pg=await b.new_page(viewport={'width':w,'height':900})
             await pg.goto(f'file://{D}/{k}.html',wait_until='networkidle')
             await pg.evaluate('document.fonts.ready')

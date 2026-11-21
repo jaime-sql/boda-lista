@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cómo responde la IA (móvil) · empty · Boda Lista</title>
+<link rel="stylesheet" href="../tokens/tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>body{width:390px} 
+.wrapd{padding:var(--space-8) var(--space-10) var(--space-12)}
+.ph{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-6);margin-bottom:var(--space-6);flex-wrap:wrap}
+.ph h1{font-size:var(--text-3xl);margin-top:var(--space-1)}
+.ph p{color:var(--color-text-muted);margin-top:var(--space-1)}
+.cardh{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding:var(--space-5) var(--space-6);border-bottom:1px solid var(--color-border);flex-wrap:wrap}
+.cardh h2{font-family:var(--font-display);font-variation-settings:var(--font-display-variation);font-weight:600;font-size:var(--text-xl)}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4)}
+.tile{padding:var(--space-5) var(--space-6);display:flex;flex-direction:column;gap:var(--space-1);box-shadow:var(--shadow-sm)}
+.tile .k{font-weight:600;color:var(--color-text-muted);font-size:var(--text-sm);display:flex;align-items:center;gap:8px}
+.tile .v{font-family:var(--font-display);font-variation-settings:var(--font-display-variation);font-weight:600;font-size:var(--text-5xl);line-height:1}
+.tile .v small{font-size:var(--text-xl)}
+.tile .s{color:var(--color-text-muted);font-size:var(--text-sm)}
+.speed{display:flex;gap:var(--space-6);align-items:flex-end}
+.speed div{display:flex;flex-direction:column;gap:6px}
+.speed .v{font-size:var(--text-3xl)}
+.grid2{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:var(--space-6);margin-top:var(--space-6);align-items:start}
+.frow{display:grid;grid-template-columns:270px 1fr 60px;align-items:center;gap:var(--space-4);padding:var(--space-3) var(--space-6);min-height:64px;border-top:1px solid var(--color-border)}
+.frow .lab b{display:block}
+.frow .lab span{font-size:var(--text-sm);color:var(--color-text-muted)}
+.frow .n{text-align:right;font-weight:600;font-variant-numeric:tabular-nums;font-size:var(--text-sm);color:var(--color-text-muted)}
+.split span{display:flex;align-items:center;padding:0 10px;color:var(--color-on-primary);font-weight:700;font-size:var(--text-sm);white-space:nowrap}
+.split .few{color:var(--color-text);font-weight:600;justify-content:center}
+.legend2{display:flex;gap:var(--space-3);padding:var(--space-4) var(--space-6) 0;flex-wrap:wrap}
+.rs{list-style:none}
+.rs li{display:grid;grid-template-columns:1fr auto;gap:var(--space-1) var(--space-3);padding:var(--space-4) var(--space-6);border-top:1px solid var(--color-border)}
+.rs li .bar{grid-column:1/-1;height:10px;border-radius:999px;background:var(--color-neutral-bg);overflow:hidden}
+.rs li .bar i{display:block;height:100%;background:var(--color-cloud-fg)}
+.rs code{font-size:var(--text-sm);color:var(--color-text-muted);font-family:var(--font-body);font-weight:600;font-size:1rem}
+.foot{display:flex;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap;margin-top:var(--space-6);color:var(--color-text-muted);font-size:var(--text-sm)}
+.emp{text-align:center;padding:var(--space-16) var(--space-6);display:flex;flex-direction:column;align-items:center;gap:var(--space-3)}
+.emp h2{font-family:var(--font-display);font-variation-settings:var(--font-display-variation);font-size:var(--text-2xl);font-weight:600}
+.emp p{max-width:520px;color:var(--color-text-muted)}
+.few-note{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:var(--radius-pill);background:var(--color-neutral-bg);font-size:var(--text-sm);font-weight:600}
+
+.wrapd{padding:var(--space-4) var(--space-4) var(--space-6)}
+.ph h1{font-size:var(--text-2xl)}
+.tiles{grid-template-columns:1fr}
+.tile .v{font-size:var(--text-4xl)}
+.grid2{grid-template-columns:1fr}
+.frow{grid-template-columns:1fr 44px;grid-template-areas:"lab n" "bar bar";padding:var(--space-3) var(--space-5);gap:var(--space-2)}
+.frow .lab{grid-area:lab}.frow .n{grid-area:n}.frow .split{grid-area:bar}
+.cardh{padding:var(--space-4) var(--space-5)}
+.rs li,.legend2{padding-left:var(--space-5);padding-right:var(--space-5)}
+.emp{padding:var(--space-10) var(--space-5)}
+.banner-error{flex-wrap:wrap}.banner-error>div{min-width:calc(100% - 40px)}.banner-error .btn{width:100%}
+.emp .row{flex-direction:column;width:100%}.emp .btn{width:100%;white-space:normal}
+</style>
+</head><body>
+<div class="weave"></div><header class="appbar"><div class="brand" style="font-size:var(--text-lg)"><span class="mono">A&amp;D</span>Boda Lista</div><div class="seg" role="group" aria-label="Idioma"><span class="on">ES</span><span>EN</span></div></header><main class="wrapd"><div class="ph"><div><p class="eyebrow">Inteligencia híbrida</p><h1 class="display">Cómo responde la IA</h1><p>Qué se respondió en el teléfono y qué tuvo que ir a la nube.</p></div><div class="row wrap gap-3"><div class="seg" role="group" aria-label="Periodo"><span class="on">Todo</span><span class="">Últimas 24 h</span></div></div></div><section class="card emp"><svg width="90" height="118" viewBox="0 0 92 120" fill="none" stroke="var(--color-primary)" stroke-width="1.4" aria-hidden="true"><path d="M46 120V30"/><g fill="var(--color-bg)"><path d="M46 30c-7-4-9-13-4-20 3 6 5 9 4 20z"/><path d="M46 30c7-4 9-13 4-20-3 6-5 9-4 20z"/><path d="M46 48c-10-2-15-10-11-18 4 5 8 7 11 18z"/><path d="M46 48c10-2 15-10 11-18-4 5-8 7-11 18z"/><path d="M46 66c-11 0-18-8-16-17 5 4 10 6 16 17z"/><path d="M46 66c11 0 18-8 16-17-5 4-10 6-16 17z"/></g><path d="M46 112c-10-6-26-6-38 0M46 112c10-6 26-6 38 0" stroke="var(--color-success-fg)"/></svg><h2>Aún no hay preguntas</h2><p>Cuando los invitados pregunten o pegues respuestas de WhatsApp, aquí verás cuánto se respondió en el teléfono y cuánto en la nube.</p><div class="row wrap gap-3" style="justify-content:center;margin-top:var(--space-2)"><button class="btn btn-primary btn-lg"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Compartir enlace con invitados</button><button class="btn btn-secondary btn-lg">Pegar respuestas</button></div></section></main><nav class="tabbar" style="grid-template-columns:repeat(4,1fr)"><a class=""><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-5h4v5"/></svg>Inicio</a><a class=""><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 14.2A5 5 0 0 1 21.5 19"/></svg>Invitados</a><a class=""><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3"/><rect x="4" y="8" width="16" height="11.5" rx="2.5"/><path d="M15.5 13.8h.01"/></svg>Presupuesto</a><a class="on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V4M4 20h16M8 16v-5M12 16V8M16 16v-3"/></svg>IA</a></nav>
+</body></html>

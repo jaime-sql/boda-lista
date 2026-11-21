@@ -1,0 +1,5 @@
+{
+  "qa":   { "high": 0.85, "cloud_cutoff": 0.60, "min_n": 20 },
+  "rsvp": { "high": 0.85, "cloud_cutoff": 0.60, "min_n": 20 },
+  "song": { "high": 0.85, "cloud_cutoff": 0.60, "min_n": 20 }
+}

@@ -123,3 +123,17 @@ textarea.input{padding:var(--space-4);line-height:var(--leading-normal)}
 .navlinks a{min-height:var(--tap-min);display:flex;align-items:center;padding:0 var(--space-4);border-radius:var(--radius-pill);text-decoration:none;color:var(--color-text-muted);font-weight:var(--weight-semibold)}
 .navlinks a.on{background:var(--color-primary-soft);color:var(--color-text)}
 .avatar{width:var(--tap-min);height:var(--tap-min);border-radius:50%;background:var(--color-accent);display:grid;place-items:center;font-weight:700;color:var(--color-text)}
+
+/* ---- Batch 2: skeleton, stale snapshot, mock label, split bars ---- */
+.skeleton{display:block;border-radius:var(--radius-sm);background:linear-gradient(90deg,var(--color-neutral-bg) 0%,var(--color-surface-alt) 50%,var(--color-neutral-bg) 100%);background-size:200% 100%;animation:sk 1.4s linear infinite}
+@keyframes sk{to{background-position:-200% 0}}
+:root[data-motion="reduced"] .skeleton{animation:none}
+@media (prefers-reduced-motion: reduce){.skeleton{animation:none}}
+.is-stale{filter:grayscale(.55)}
+.mock-chip{display:inline-flex;align-items:center;min-height:32px;padding:0 12px;border:1.5px dashed var(--color-border-strong);border-radius:var(--radius-pill);font-size:var(--text-sm);font-weight:600;color:var(--color-text-muted)}
+.banner-error{background:var(--color-danger-bg);color:var(--color-danger-fg)}
+.split{display:flex;height:28px;border-radius:var(--radius-sm);overflow:hidden;gap:2px;background:var(--color-surface)}
+.split .dev{background:var(--color-device-fg)}
+.split .cld{background:var(--color-cloud-fg)}
+.split .few{flex:1;background:repeating-linear-gradient(135deg,var(--color-neutral-bg) 0 8px,var(--color-surface) 8px 16px);border:1px dashed var(--color-border-strong);border-radius:var(--radius-sm)}
+.money{font-variant-numeric:tabular-nums}

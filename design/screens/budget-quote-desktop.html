@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>budget-quote-desktop · Boda Lista</title>
+<link rel="stylesheet" href="../tokens/tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>body{width:1440px} 
+.wrapd{padding:var(--space-8) var(--space-10) var(--space-12)}
+.ph{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-6);margin-bottom:var(--space-6);flex-wrap:wrap}
+.ph h1{font-size:var(--text-3xl);margin-top:var(--space-1)}
+.ph p{color:var(--color-text-muted);margin-top:var(--space-1)}
+.cardh{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding:var(--space-5) var(--space-6);border-bottom:1px solid var(--color-border);flex-wrap:wrap}
+.cardh h2{font-family:var(--font-display);font-variation-settings:var(--font-display-variation);font-weight:600;font-size:var(--text-xl)}
+.paste{font-size:var(--text-sm);line-height:1.55;resize:none;min-height:560px;font-family:var(--font-body);padding:var(--space-4);white-space:pre-wrap;align-items:flex-start}
+.qgrid{display:grid;grid-template-columns:minmax(0,0.85fr) minmax(0,1.4fr);gap:var(--space-6);align-items:start}
+.items{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1.1fr) 90px 110px minmax(0,1.5fr) 72px;align-items:stretch}
+.items>div{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--color-border);min-height:72px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.items>.th{min-height:auto;font-size:var(--text-sm);font-weight:600;color:var(--color-text-muted);border-bottom:1.5px solid var(--color-border-strong)}
+.items>.rv{background:var(--color-danger-bg)}
+.items>.rv.first{box-shadow:inset 4px 0 0 var(--color-danger-fg)}
+.num{justify-content:flex-end;font-variant-numeric:tabular-nums}
+.check{display:flex;gap:var(--space-3);align-items:center;padding:var(--space-4) var(--space-6);background:var(--color-success-bg);color:var(--color-success-fg);font-weight:600}
+.total{display:flex;justify-content:space-between;align-items:baseline;padding:var(--space-4) var(--space-6);border-top:1px solid var(--color-border)}
+.total b{font-family:var(--font-display);font-variation-settings:var(--font-display-variation);font-size:var(--text-3xl);font-weight:600}
+.iva{margin:var(--space-4) var(--space-6);padding:var(--space-4);border-radius:var(--radius-md);background:var(--color-danger-bg);display:flex;gap:var(--space-4);align-items:center;flex-wrap:wrap}
+.iva p{flex:1;min-width:240px}
+.terms{list-style:none;padding:0 var(--space-6) var(--space-4)}
+.terms li{display:flex;gap:var(--space-3);padding:var(--space-2) 0;align-items:flex-start}
+.terms li svg{flex:none;margin-top:3px;color:var(--color-cloud-fg)}
+.vf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-4);padding:var(--space-5) var(--space-6)}
+.impact{padding:var(--space-4) var(--space-6);border-top:1px solid var(--color-border);display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap}
+.acts{display:flex;gap:var(--space-3);justify-content:flex-end;padding:var(--space-5) var(--space-6);border-top:1px solid var(--color-border);flex-wrap:wrap}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-4)}
+.kpi{padding:var(--space-5) var(--space-6);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:4px}
+.kpi .k{font-size:var(--text-sm);font-weight:600;color:var(--color-text-muted)}
+.kpi .v{font-family:var(--font-display);font-variation-settings:var(--font-display-variation);font-weight:600;font-size:var(--text-4xl);line-height:1.05;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:var(--text-sm);color:var(--color-text-muted)}
+.kpi.hl{background:var(--color-success-bg)}
+.money-bar{display:flex;height:36px;border-radius:var(--radius-sm);overflow:hidden;gap:2px;margin:var(--space-5) 0 var(--space-2)}
+.money-bar span{display:flex;align-items:center;padding:0 12px;font-weight:700;font-size:var(--text-sm);white-space:nowrap}
+.mb-paid{background:var(--color-success-fg);color:var(--color-on-primary)}
+.mb-due{background:var(--color-warning-fg);color:var(--color-on-primary)}
+.mb-left{background:repeating-linear-gradient(135deg,var(--color-neutral-bg) 0 8px,var(--color-surface) 8px 16px);border:1px dashed var(--color-border-strong);color:var(--color-text)}
+.mlegend{display:flex;gap:var(--space-5);flex-wrap:wrap;font-size:var(--text-sm);color:var(--color-text-muted)}
+.mlegend i{display:inline-block;width:14px;height:14px;border-radius:4px;margin-right:6px;vertical-align:-2px}
+.bgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.9fr);gap:var(--space-6);margin-top:var(--space-6);align-items:start}
+.cat{padding:var(--space-3) var(--space-6);border-top:1px solid var(--color-border);display:grid;grid-template-columns:1fr auto;gap:6px var(--space-3)}
+.cat .bar{grid-column:1/-1;height:12px;border-radius:999px;background:var(--color-neutral-bg);overflow:hidden}
+.cat .bar i{display:block;height:100%;background:var(--color-primary)}
+.cat .meta{grid-column:1/-1;font-size:var(--text-sm);color:var(--color-text-muted);display:flex;justify-content:space-between;gap:var(--space-3);flex-wrap:wrap}
+.vt{display:grid;grid-template-columns:minmax(0,1.3fr) 100px minmax(0,1fr) minmax(0,1.9fr)}
+.vt>div{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--color-border);min-height:72px;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.vt>.th{min-height:auto;font-size:var(--text-sm);font-weight:600;color:var(--color-text-muted);border-bottom:1.5px solid var(--color-border-strong)}
+.vt .badge{align-self:flex-start}
+.vt .sub{font-size:var(--text-sm);color:var(--color-text-muted)}
+.vt .num{align-items:flex-end;text-align:right}
+.filters{display:flex;gap:var(--space-2);flex-wrap:wrap}
+</style>
+</head><body>
+<div class="weave"></div><header class="topnav"><div class="brand"><span class="mono">A&amp;D</span>Boda Lista</div><nav class="navlinks"><a class="">Resumen</a><a class="">Respuestas</a><a class="">Invitados</a><a class="on">Presupuesto</a><a class="">Cómo responde la IA</a></nav><div class="seg" role="group" aria-label="Idioma"><span class="on">ES</span><span>EN</span></div><div class="avatar" aria-label="Ana">AN</div></header><main class="wrapd">
+<div class="ph"><div><p class="eyebrow">Proveedores y presupuesto</p><h1 class="display">Pegar una cotización</h1><p>Pega el texto que te mandó el proveedor. Lo ordenamos para que lo revises.</p></div><div class="row wrap gap-3"><span class="mock-chip">Cotizaciones de prueba · data/ del repo</span></div></div>
+<div class="qgrid">
+<section class="card pad" style="display:flex;flex-direction:column;gap:var(--space-4)"><label class="label" for="q">Texto de la cotización (WhatsApp, correo o PDF copiado)</label><div id="q" class="input paste" style="min-height:260px">Catering La Cosecha
+Cena de 150 platos, cóctel y barra de café. Menú infantil incluido.
+Total: $3,750 USD</div><div class="banner banner-info"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg><span>Las cotizaciones cortas se leen en tu teléfono, sin internet.</span></div><div class="row gap-3 wrap"><button class="btn btn-primary btn-lg"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/></svg>Leer cotización</button><button class="btn btn-quiet btn-lg">Borrar</button></div></section>
+<div style="display:flex;flex-direction:column;gap:var(--space-6)">
+<section class="card"><div class="cardh"><h2>Lo que encontramos</h2><span class="badge badge-device"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>En tu teléfono</span></div><div class="vf" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="field"><label class="label">Proveedor</label><div class="input">Catering La Cosecha</div></div><div class="field"><label class="label">Categoría</label><div class="input">Comida</div></div></div><div class="items"><div class="th">Concepto</div><div class="th">Cantidad</div><div class="th">Precio</div><div class="th">Subtotal</div><div class="th">Leído y confianza</div><div class="th"></div><div class="first"><b>Cena</b></div><div>150 platos</div><div class="num muted">—</div><div class="num muted">incluido</div><div><span class="badge badge-device"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>En tu teléfono</span><span class="conf high" data-confidence="0.95"><i><b></b><b></b><b></b></i>Alta 95%</span></div><div><button class="btn btn-icon btn-quiet" aria-label="Editar línea"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button></div><div class="first"><b>Cóctel</b></div><div>—</div><div class="num muted">—</div><div class="num muted">incluido</div><div><span class="badge badge-device"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>En tu teléfono</span><span class="conf high" data-confidence="0.91"><i><b></b><b></b><b></b></i>Alta 91%</span></div><div><button class="btn btn-icon btn-quiet" aria-label="Editar línea"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button></div><div class="first"><b>Barra de café</b></div><div>—</div><div class="num muted">—</div><div class="num muted">incluido</div><div><span class="badge badge-device"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>En tu teléfono</span><span class="conf high" data-confidence="0.90"><i><b></b><b></b><b></b></i>Alta 90%</span></div><div><button class="btn btn-icon btn-quiet" aria-label="Editar línea"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button></div><div class="first"><b>Menú infantil</b></div><div>Incluido</div><div class="num muted">—</div><div class="num muted">incluido</div><div><span class="badge badge-device"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>En tu teléfono</span><span class="conf high" data-confidence="0.88"><i><b></b><b></b><b></b></i>Alta 88%</span></div><div><button class="btn btn-icon btn-quiet" aria-label="Editar línea"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button></div></div>
+<div class="iva" style="background:var(--color-warning-bg);color:var(--color-warning-fg)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg><p><b>Un solo monto, sin desglose.</b> La cotización no trae precio por línea, así que no hay suma que comprobar. Si quieres comparar con otro proveedor, pídeles el precio por plato.</p></div>
+<div class="total"><span>Total de la cotización</span><b>$3,750</b></div>
+<div class="impact"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3"/><rect x="4" y="8" width="16" height="11.5" rx="2.5"/><path d="M15.5 13.8h.01"/></svg><span>Con esta cotización, el total cotizado es <b>$12,350</b> de <b>$13,000</b> planeado (ejemplo).</span></div>
+<div class="acts"><button class="btn btn-quiet btn-lg">Descartar</button><button class="btn btn-primary btn-lg"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Guardar como “Por aprobar”</button></div></section>
+<p class="sm muted">Los porcentajes de confianza son de ejemplo. El texto viene de <code>data/vendor_quotes.jsonl</code> (vendor-02), datos de prueba.</p>
+</div></div></main>
+</body></html>
