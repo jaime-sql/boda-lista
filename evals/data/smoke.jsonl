@@ -1,0 +1,16 @@
+# FAKE SMOKE DATA — not for reporting. Synthetic strings, not real guests.
+{"id":"smoke-rsvp-01","split":"dev","task":"rsvp","text":"vamos 3, mi hijo es vegetariano","lang":"es","attending":"yes","party_size":3,"meal_restrictions":["vegetarian"],"kids_count":1,"needs_ride":null,"ambiguous":false}
+{"id":"smoke-rsvp-02","split":"dev","task":"rsvp","text":"mi primo no puede ir","lang":"es","attending":"no","party_size":null,"meal_restrictions":[],"kids_count":null,"needs_ride":null,"ambiguous":false}
+{"id":"smoke-rsvp-03","split":"test","task":"rsvp","text":"tal vez somos dos, mi hija es vegana y alérgica a la nuez","lang":"es","attending":"maybe","party_size":2,"meal_restrictions":["allergy:nuez","vegan"],"kids_count":1,"needs_ride":null,"ambiguous":false}
+{"id":"smoke-rsvp-04","split":"test","task":"rsvp","text":"yes we'll be there, party of 4, two kids, gluten free, we need a ride","lang":"en","attending":"yes","party_size":4,"meal_restrictions":["gluten_free"],"kids_count":2,"needs_ride":true,"ambiguous":false}
+{"id":"smoke-rsvp-05","split":"dev","task":"rsvp","text":"maybe, not sure yet","lang":"en","attending":"maybe","party_size":null,"meal_restrictions":[],"kids_count":null,"needs_ride":null,"ambiguous":false}
+{"id":"smoke-rsvp-06","split":"stress","task":"rsvp","text":"vamos 3, pero no te lo firme todavía","lang":"es","attending":"yes","party_size":3,"meal_restrictions":[],"kids_count":null,"needs_ride":null,"ambiguous":true}
+{"id":"smoke-rsvp-07","split":"stress","task":"rsvp","text":"no podemos ir, gracias","lang":"es","attending":"no","party_size":null,"meal_restrictions":[],"kids_count":null,"needs_ride":null,"ambiguous":false}
+{"id":"smoke-rsvp-08","split":"dev","task":"rsvp","text":"I'm coming, just me, vegetarian","lang":"en","attending":"yes","party_size":1,"meal_restrictions":["vegetarian"],"kids_count":null,"needs_ride":null,"ambiguous":false}
+{"id":"smoke-song-01","split":"dev","task":"song","text":"Vivir mi vida de Marc Anthony","lang":"es","title":"Vivir mi vida","artist":"Marc Anthony","energy":null,"ambiguous":false}
+{"id":"smoke-song-02","split":"test","task":"song","text":"la de Marc Anthony que siempre ponen","lang":"es","title":null,"artist":"Marc Anthony","energy":null,"ambiguous":true}
+{"id":"smoke-song-03","split":"test","task":"song","text":"Marc Anthony - Vivir Mi Vida","lang":"en","title":"Vivir Mi Vida","artist":"Marc Anthony","energy":null,"ambiguous":false}
+{"id":"smoke-song-04","split":"stress","task":"song","text":"something upbeat please","lang":"en","title":null,"artist":null,"energy":"dance","ambiguous":true}
+{"id":"smoke-song-05","split":"dev","task":"song","text":"una balada romántica","lang":"es","title":null,"artist":null,"energy":"slow","ambiguous":true}
+{"id":"smoke-rsvp-09","split":"stress","task":"rsvp","text":"Sorry we can't make it, no kids","lang":"en","attending":"no","party_size":null,"meal_restrictions":[],"kids_count":0,"needs_ride":null,"ambiguous":false}
+{"id":"smoke-rsvp-10","split":"test","task":"rsvp","text":"Confirmado, seremos cinco, sin gluten, ocupamos ride y vienen 2 niños","lang":"es","attending":"yes","party_size":5,"meal_restrictions":["gluten_free"],"kids_count":2,"needs_ride":true,"ambiguous":false}

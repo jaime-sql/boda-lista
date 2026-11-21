@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Boda Lista eval runner</title>
+  <style>
+    :root { color-scheme: light; }
+    body { font-family: "Segoe UI", sans-serif; margin: 0 auto; max-width: 880px; padding: 24px; line-height: 1.45; }
+    h1 { font-size: 1.4rem; }
+    fieldset { margin: 16px 0; }
+    label { display: block; margin: 8px 0; }
+    button { font: inherit; padding: 8px 14px; }
+    #log { white-space: pre-wrap; background: #f4f4f4; padding: 12px; min-height: 4rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+    td, th { border-bottom: 1px solid #ddd; text-align: left; padding: 4px 6px; }
+  </style>
+</head>
+<body>
+  <h1>Boda Lista evaluation runner</h1>
+  <p>
+    Desktop Chrome on this laptop. On-device mode calls Firebase AI Logic with
+    <code>InferenceMode.ONLY_ON_DEVICE</code> (Gemini Nano). Cloud mode uses
+    <code>ONLY_IN_CLOUD</code>. The prompt is
+    <code>evals/prompts/extract.json</code>, the same file Gemma uses.
+    Firebase config stays in a local untracked file.
+  </p>
+  <fieldset>
+    <legend>Inputs</legend>
+    <label>JSONL set <input id="dataFile" type="file" accept=".jsonl,application/jsonl,.json" /></label>
+    <label>Prompt file, if fetch fails <input id="promptFile" type="file" accept="application/json,.json" /></label>
+    <label>Firebase config <input id="configFile" type="file" accept="application/json,.json" /></label>
+    <label><input type="radio" name="mode" value="device" checked /> On-device only (Nano)</label>
+    <label><input type="radio" name="mode" value="cloud" /> Cloud only</label>
+  </fieldset>
+  <p>
+    <button id="run" type="button">Run</button>
+    <button id="download" type="button" disabled>Download predictions JSONL</button>
+  </p>
+  <p id="log">Waiting.</p>
+  <table>
+    <thead><tr><th>id</th><th>task</th><th>ok</th><th>ms</th><th>source</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
+    import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app-check.js";
+    import { getAI, getGenerativeModel, GoogleAIBackend, InferenceMode } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-ai.js";
+
+    const logEl = document.querySelector("#log");
+    const rowsEl = document.querySelector("#rows");
+    const downloadBtn = document.querySelector("#download");
+    let predictions = [];
+
+    function log(message) {
+      logEl.textContent = message;
+    }
+
+    function readFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(reader.error);
+        reader.readAsText(file);
+      });
+    }
+
+    function parseJsonl(text) {
+      const rows = [];
+      for (const line of text.split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith("#")) continue;
+        rows.push(JSON.parse(trimmed));
+      }
+      return rows;
+    }
+
+    // Same four-part join as evals/prompting.py: system, instruction, schema, user_template.
+    function buildPrompt(spec, item) {
+      const taskSpec = spec.tasks[item.task];
+      const body = spec.user_template
+        .replaceAll("{task}", item.task)
+        .replaceAll("{lang}", item.lang || "")
+        .replaceAll("{text}", item.text);
+      return [
+        spec.system,
+        taskSpec.instruction,
+        "JSON schema:",
+        JSON.stringify(taskSpec.output_schema, null, 2),
+        body,
+      ].join("\n\n");
+    }
+
+    function toGeminiSchema(schema) {
+      if (Array.isArray(schema)) return schema.map(toGeminiSchema);
+      if (!schema || typeof schema !== "object") return schema;
+      const next = {};
+      for (const [key, value] of Object.entries(schema)) {
+        if (key === "additionalProperties" || key === "$schema") continue;
+        next[key] = toGeminiSchema(value);
+      }
+      if (Array.isArray(schema.type)) {
+        const types = schema.type.filter((entry) => entry !== "null");
+        next.type = types.length === 1 ? types[0] : types;
+        if (schema.type.includes("null")) next.nullable = true;
+      }
+      return next;
+    }
+
+    function parseModelJson(text) {
+      const fenced = text.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/i);
+      const candidate = fenced ? fenced[1] : text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1);
+      const value = JSON.parse(candidate);
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error("not an object");
+      }
+      return value;
+    }
+
+    async function loadPromptSpec() {
+      const picked = document.querySelector("#promptFile").files[0];
+      if (picked) return JSON.parse(await readFile(picked));
+      const response = await fetch(new URL("../prompts/extract.json", window.location.href));
+      if (!response.ok) throw new Error("Could not fetch ../prompts/extract.json. Pick the file, or serve the repo over http.");
+      return response.json();
+    }
+
+    document.querySelector("#run").addEventListener("click", async () => {
+      predictions = [];
+      rowsEl.replaceChildren();
+      downloadBtn.disabled = true;
+      const dataFile = document.querySelector("#dataFile").files[0];
+      const configFile = document.querySelector("#configFile").files[0];
+      if (!dataFile || !configFile) {
+        log("Choose a JSONL set and a Firebase config file.");
+        return;
+      }
+      const modeName = document.querySelector("input[name=mode]:checked").value;
+      const onDevice = modeName === "device";
+      try {
+        const spec = await loadPromptSpec();
+        const items = parseJsonl(await readFile(dataFile)).filter((row) => row.task === "rsvp" || row.task === "song");
+        const config = JSON.parse(await readFile(configFile));
+        const firebaseConfig = {
+          apiKey: config.apiKey,
+          authDomain: config.authDomain,
+          projectId: config.projectId,
+          storageBucket: config.storageBucket,
+          messagingSenderId: config.messagingSenderId,
+          appId: config.appId,
+        };
+        self.FIREBASE_APPCHECK_DEBUG_TOKEN = config.appCheckDebugToken || true;
+        const app = initializeApp(firebaseConfig, "boda-lista-evals-" + modeName);
+        if (config.appCheckSiteKey) {
+          initializeAppCheck(app, {
+            provider: new ReCaptchaV3Provider(config.appCheckSiteKey),
+            isTokenAutoRefreshEnabled: true,
+          });
+        }
+        const ai = getAI(app, { backend: new GoogleAIBackend() });
+        const mode = onDevice ? InferenceMode.ONLY_ON_DEVICE : InferenceMode.ONLY_IN_CLOUD;
+        const cloudModel = config.cloudModel || "gemini-3.5-flash-lite";
+        const model = getGenerativeModel(ai, {
+          mode,
+          inCloudParams: {
+            model: cloudModel,
+            generationConfig: { temperature: 0, responseMimeType: "application/json" },
+          },
+        });
+        if (onDevice) {
+          if (!("LanguageModel" in self)) {
+            log("This Chrome has no LanguageModel API. Use desktop Chrome 139+ and enable chrome://flags/#prompt-api-for-gemini-nano-multimodal-input. On-device mode will not fall back to the cloud.");
+          }
+          log("Initializing the on-device model. The first download can take several minutes.");
+          await model.initializeDeviceModel((progress) => {
+            log(`On-device model download ${Math.round(progress * 1000) / 10}%`);
+          });
+        }
+        for (let index = 0; index < items.length; index += 1) {
+          const item = items[index];
+          log(`Running ${index + 1} / ${items.length}: ${item.id}`);
+          const started = performance.now();
+          let record = {
+            id: item.id,
+            task: item.task,
+            split: item.split,
+            lang: item.lang,
+            ok: false,
+            error: null,
+            confidence: null,
+            latency_ms: null,
+            output: null,
+            raw: "",
+            inference_source: null,
+          };
+          try {
+            const taskSchema = toGeminiSchema(spec.tasks[item.task].output_schema);
+            const result = await model.generateContent({
+              contents: [{ role: "user", parts: [{ text: buildPrompt(spec, item) }] }],
+              generationConfig: {
+                temperature: 0,
+                responseMimeType: "application/json",
+                responseSchema: taskSchema,
+              },
+            });
+            record.latency_ms = performance.now() - started;
+            record.raw = result.response.text();
+            record.inference_source = result.response.inferenceSource || null;
+            const source = String(record.inference_source || "").toUpperCase();
+            if (onDevice && source.includes("CLOUD")) {
+              record.error = "unexpected_cloud_fallback";
+            } else {
+              record.output = parseModelJson(record.raw);
+              record.confidence = typeof record.output.confidence === "number" ? record.output.confidence : null;
+              record.ok = true;
+            }
+          } catch (error) {
+            record.latency_ms = performance.now() - started;
+            record.error = "invalid_json";
+            record.raw = String(error && error.message ? error.message : error);
+          }
+          predictions.push(record);
+          const tr = document.createElement("tr");
+          for (const cell of [record.id, record.task, String(record.ok), record.latency_ms == null ? "" : record.latency_ms.toFixed(0), record.inference_source || record.error || ""]) {
+            const td = document.createElement("td");
+            td.textContent = cell;
+            tr.append(td);
+          }
+          rowsEl.append(tr);
+        }
+        downloadBtn.disabled = predictions.length === 0;
+        log(`Finished ${predictions.length} items. Download the JSONL and score it with evals/score.py.`);
+      } catch (error) {
+        log(String(error && error.stack ? error.stack : error));
+      }
+    });
+
+    downloadBtn.addEventListener("click", () => {
+      const body = predictions.map((row) => JSON.stringify(row)).join("\n") + "\n";
+      const blob = new Blob([body], { type: "application/jsonl" });
+      const link = document.createElement("a");
+      const modeName = document.querySelector("input[name=mode]:checked").value;
+      link.href = URL.createObjectURL(blob);
+      link.download = `predictions-${modeName}.jsonl`;
+      link.click();
+    });
+  </script>
+</body>
+</html>

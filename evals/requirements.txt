@@ -1,0 +1,5 @@
+# Local CPU harness (rules, score, threshold, report, tests).
+# Python 3.11. Gemma's GPU stack is installed on Modal, not here.
+jsonschema==4.23.0
+rapidfuzz==3.12.2
+pytest==8.3.5

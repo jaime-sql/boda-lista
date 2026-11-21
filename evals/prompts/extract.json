@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "system": "You extract structured data from a wedding guest message for a Salvadoran wedding. The message may be Salvadoran Spanish or English. Return only one JSON object that matches the schema. No markdown and no commentary. Use null when a value is unknown. If the message cannot be resolved to a single answer, set ambiguous to true and do not guess. confidence is your certainty from 0 to 1.",
+  "user_template": "Task: {task}\nLanguage: {lang}\nMessage:\n{text}\n\nReturn only a JSON object.",
+  "tasks": {
+    "rsvp": {
+      "instruction": "Task RSVP. Read the guest reply and fill the schema.\n- attending: yes, no, or maybe. Always choose one. Hedged or partial replies still get the best reading and set ambiguous to true.\n- party_size: integer count of people attending, or null when no count is stated. Do not use 0.\n- meal_restrictions: list of tags. Allowed tags are vegetarian, vegan, gluten_free, kids_menu, and allergy:<allergen> in lowercase with underscores. Use an empty list when none are stated.\n- kids_count: integer number of children, or null when not stated. Use 0 only when the guest says there are no children.\n- needs_ride: true when the guest asks for a ride or transport, false when they decline one, null when transport is not mentioned.\n- ambiguous: true when the reply is partial, hedged, or contradictory (for example they confirm themselves but not the rest of the party). Still fill attending.\n- confidence: number in [0, 1].",
+      "output_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "attending",
+          "party_size",
+          "meal_restrictions",
+          "kids_count",
+          "needs_ride",
+          "ambiguous",
+          "confidence"
+        ],
+        "properties": {
+          "attending": {"type": "string", "enum": ["yes", "no", "maybe"]},
+          "party_size": {"type": ["integer", "null"], "minimum": 1},
+          "meal_restrictions": {"type": "array", "items": {"type": "string"}},
+          "kids_count": {"type": ["integer", "null"], "minimum": 0},
+          "needs_ride": {"type": ["boolean", "null"]},
+          "ambiguous": {"type": "boolean"},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+        }
+      }
+    },
+    "song": {
+      "instruction": "Task song request. Identify a single song.\n- title: the song title, or null when no single song is identifiable. Never guess a title for a vague request such as 'the Marc Anthony one they always play'.\n- artist: the artist name when it is stated, otherwise null. A vague request may still name the artist.\n- energy: one of slow, medium, dance, or null when not stated. dance means upbeat or for dancing, slow means a ballad or chill song.\n- ambiguous: true when no single song is identifiable. A vague request must set ambiguous to true and title to null.\n- confidence: number in [0, 1].",
+      "output_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title", "artist", "energy", "ambiguous", "confidence"],
+        "properties": {
+          "title": {"type": ["string", "null"]},
+          "artist": {"type": ["string", "null"]},
+          "energy": {
+            "type": ["string", "null"],
+            "enum": ["slow", "medium", "dance", null]
+          },
+          "ambiguous": {"type": "boolean"},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+        }
+      }
+    }
+  }
+}
