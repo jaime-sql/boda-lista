@@ -346,7 +346,7 @@ def _block(items: list[dict[str, Any]], *, with_lang: bool = False) -> dict[str,
             "n": len(latencies),
         },
         "rsvp": _rsvp_metrics([item for item in items if item["gold"]["task"] == "rsvp"]),
-        "song": _song_metrics([item for item in items if item["gold"]["task"] == "song"]),
+        "songs": _song_metrics([item for item in items if item["gold"]["task"] == "song"]),
     }
     if with_lang:
         grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -407,7 +407,7 @@ def score_predictions(
         "cost_usd_per_1000": cost_per_thousand(backend, overall["n"], meta),
         "fuzzy_threshold": FUZZY_THRESHOLD,
         "rsvp": overall["rsvp"],
-        "song": overall["song"],
+        "songs": overall["songs"],
         "by_lang": overall.get("by_lang", {}),
         "by_split": by_split,
     }

@@ -46,7 +46,7 @@ def test_rules_smoke_pipeline(tmp_path: Path):
     assert summary["n"] == 15
     assert summary["invalid_json_rate"] == 0
     assert summary["rsvp"]["all_fields_correct"] == 1
-    assert summary["song"]["all_fields_correct"] == 1
+    assert summary["songs"]["all_fields_correct"] == 1
     assert summary["by_split"]["stress"]["n"] == 4
     assert summary["by_lang"]["es"]["n"] > 0
     assert summary["by_lang"]["en"]["n"] > 0

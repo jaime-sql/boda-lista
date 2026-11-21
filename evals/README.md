@@ -84,6 +84,8 @@ python -m evals.threshold \
 
 Omit `--song-dev` when that file does not exist. The summary then says `no song threshold: no dev split` and the song test file is not used for tuning. The chosen RSVP threshold is the lowest cutoff that maximizes the on-device share while hybrid accuracy stays within 1 percentage point of cloud-only. It is applied once to the test split.
 
+The same command writes `evals/results/<run_id>/config.json` next to the summary, keyed `qa`, `rsvp`, and `songs`. `cloud_cutoff` is the dev routing threshold: anything below it goes to the cloud. `high` is the stricter zero-slack cutoff from the same dev sweep. `min_n` is 20, the minimum number of dev items required before a cutoff is written. `qa` has no dev split, and any feature without dev rows is null with `"note": "no dev split"`. This file is not `tokens/config.json`. Copy the numbers across after review.
+
 Report (skips any summary marked smoke; missing backends show `not run`):
 
 ```bash

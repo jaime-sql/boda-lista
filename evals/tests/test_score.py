@@ -195,7 +195,7 @@ def test_song_fuzzy_match_guess_rate_and_energy():
         },
     ]
     summary = score_predictions(golds, predictions, backend="nano", smoke=False)
-    song = summary["song"]
+    song = summary["songs"]
     assert song["title_artist_accuracy"] == pytest.approx(1.0)
     assert song["title_artist_n"] == 1
     assert song["energy_accuracy"] == pytest.approx(1.0)

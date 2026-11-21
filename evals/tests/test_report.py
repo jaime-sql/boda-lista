@@ -12,11 +12,11 @@ def _summary(backend, all_fields, smoke=False):
         "by_lang": {
             "es": {
                 "rsvp": {"all_fields_correct": all_fields, "n": 2},
-                "song": {"all_fields_correct": all_fields, "n": 2},
+                "songs": {"all_fields_correct": all_fields, "n": 2},
             }
         },
         "rsvp": {"all_fields_correct": all_fields, "n": 2, "attending_accuracy": all_fields},
-        "song": {"all_fields_correct": all_fields, "n": 2, "title_artist_accuracy": all_fields},
+        "songs": {"all_fields_correct": all_fields, "n": 2, "title_artist_accuracy": all_fields},
     }
     return {
         "backend": backend,
@@ -28,7 +28,7 @@ def _summary(backend, all_fields, smoke=False):
         "by_lang": block["by_lang"],
         "by_split": {"test": block},
         "rsvp": block["rsvp"],
-        "song": block["song"],
+        "songs": block["songs"],
     }
 
 

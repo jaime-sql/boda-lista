@@ -4,14 +4,17 @@ from pathlib import Path
 import pytest
 
 from evals.threshold import (
+    MIN_N,
     SONG_NO_DEV,
     NoDevRowsError,
     TestLabelLeakError,
+    app_config,
     build_hybrid_summary,
     evaluate_task,
     load_dev_for_selection,
     route_predictions,
     select_threshold,
+    write_app_config,
 )
 
 
@@ -177,3 +180,49 @@ def test_dev_file_with_only_rsvp_rows_does_not_open_song_test(tmp_path):
     )
     assert result["status"] == SONG_NO_DEV
     assert not test.exists()
+
+
+def _selection(high, cloud_cutoff, n):
+    return {"threshold": cloud_cutoff, "high": high, "cloud_cutoff": cloud_cutoff, "n": n}
+
+
+def test_config_file_shape(tmp_path):
+    routing = {
+        "rsvp": _selection(0.8, 0.55, MIN_N),
+        "songs": {"status": SONG_NO_DEV},
+    }
+    run_dir = tmp_path / "results" / "dev-run"
+    path = write_app_config(routing, run_dir)
+    assert path == run_dir / "config.json"
+    assert path.name == "config.json"
+    assert "tokens" not in path.parts
+
+    config = json.loads(path.read_text(encoding="utf-8"))
+    assert list(config) == ["qa", "rsvp", "songs"]
+    assert "analytics" not in json.dumps(config)
+
+    published = config["rsvp"]
+    assert set(published) == {"high", "cloud_cutoff", "min_n"}
+    assert published["high"] == 0.8
+    assert published["cloud_cutoff"] == 0.55
+    assert published["high"] >= published["cloud_cutoff"]
+    assert published["min_n"] == 20
+
+    for feature in ("qa", "songs"):
+        block = config[feature]
+        assert block["high"] is None
+        assert block["cloud_cutoff"] is None
+        assert block["min_n"] is None
+        assert block["note"] == "no dev split"
+
+    short = app_config({"rsvp": _selection(0.9, 0.4, MIN_N - 1), "songs": {}})
+    assert short["rsvp"] == {"high": None, "cloud_cutoff": None, "min_n": 20}
+    assert "note" not in short["rsvp"]
+
+    items = [_gold(0)]
+    items[0]["split"] = "test"
+    device = {"d0": _pred(0, "yes", 0.54)}
+    cloud = {"d0": _pred(0, "no", 0.99)}
+    routed, share = route_predictions(items, device, cloud, published["cloud_cutoff"])
+    assert share == 0.0
+    assert json.loads(routed[0]["raw"])["attending"] == "no"

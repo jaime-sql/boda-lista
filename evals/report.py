@@ -26,11 +26,11 @@ METRIC_ROWS = (
     ("RSVP needs_ride exact", "rsvp", "needs_ride_exact", "rate"),
     ("RSVP ambiguous exact", "rsvp", "ambiguous_exact", "rate"),
     ("RSVP force-definite on ambiguous", "rsvp", "ambiguous_force_rate", "rate"),
-    ("Song title+artist accuracy", "song", "title_artist_accuracy", "rate"),
-    ("Song energy accuracy", "song", "energy_accuracy", "rate"),
-    ("Song ambiguous recall", "song", "ambiguous_recall", "rate"),
-    ("Song guess rate on ambiguous", "song", "guess_rate", "rate"),
-    ("Song all-fields correct", "song", "all_fields_correct", "rate"),
+    ("Song title+artist accuracy", "songs", "title_artist_accuracy", "rate"),
+    ("Song energy accuracy", "songs", "energy_accuracy", "rate"),
+    ("Song ambiguous recall", "songs", "ambiguous_recall", "rate"),
+    ("Song guess rate on ambiguous", "songs", "guess_rate", "rate"),
+    ("Song all-fields correct", "songs", "all_fields_correct", "rate"),
     ("Invalid JSON", None, "invalid_json_rate", "rate"),
     ("Latency p50 (ms)", None, "latency_p50", "ms"),
     ("Latency p95 (ms)", None, "latency_p95", "ms"),
@@ -147,7 +147,7 @@ def render_markdown(summaries: dict[str, dict[str, Any]]) -> str:
         lines.append(f"| {label} | " + " | ".join(cells) + " |")
     lines.append("")
     hybrid = summaries.get("hybrid")
-    for task, label in (("rsvp", "RSVP"), ("song", "Song")):
+    for task, label in (("rsvp", "RSVP"), ("songs", "Songs")):
         note = _routing_note(hybrid, task)
         if note:
             lines.append(f"{label} routing: {note}")
@@ -173,7 +173,7 @@ def render_markdown(summaries: dict[str, dict[str, Any]]) -> str:
         for lang, block in sorted(by_lang.items()):
             wrote_lang = True
             rsvp = format_metric((block.get("rsvp") or {}).get("all_fields_correct"), "rate", ran=True)
-            song = format_metric((block.get("song") or {}).get("all_fields_correct"), "rate", ran=True)
+            song = format_metric((block.get("songs") or {}).get("all_fields_correct"), "rate", ran=True)
             lines.append(f"| {backend} | {lang} | {rsvp} | {song} |")
     if not wrote_lang:
         lines.append("| not run | n/a | not run | not run |")
