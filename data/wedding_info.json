@@ -1,0 +1,93 @@
+{
+  "synthetic": true,
+  "disclaimer": "SYNTHETIC / FICTICIO. All names, places, contacts, dates and details in this sheet are invented for the Boda Lista demo and evaluation. They do not describe a real wedding or real people.",
+  "couple": {
+    "bride": {
+      "first_name": "Lucía",
+      "last_name": "Mendoza"
+    },
+    "groom": {
+      "first_name": "Andrés",
+      "last_name": "Solís"
+    }
+  },
+  "date": "2026-12-12",
+  "timezone": "America/El_Salvador",
+  "venue": {
+    "name": "Hacienda El Sauce",
+    "address": "Km 12.5 Carretera a La Libertad",
+    "city": "Santa Tecla, La Libertad",
+    "country": "El Salvador",
+    "ceremony_area": "Jardín Principal",
+    "reception_area": "Salón El Encanto",
+    "notes": "The property is a 25-minute drive from central Santa Tecla. A covered backup hall is available if it rains."
+  },
+  "schedule": [
+    {
+      "time": "15:30",
+      "title": "Llegada de invitados / Guest arrival",
+      "place": "Patio de ceibas",
+      "notes": "Agua y café de bienvenida."
+    },
+    {
+      "time": "16:00",
+      "title": "Ceremonia / Ceremony",
+      "place": "Jardín Principal"
+    },
+    {
+      "time": "17:30",
+      "title": "Cóctel / Cocktail hour",
+      "place": "Terraza de los Izotes"
+    },
+    {
+      "time": "18:30",
+      "title": "Cena y recepción / Dinner and reception",
+      "place": "Salón El Encanto"
+    },
+    {
+      "time": "20:00",
+      "title": "Baile de los novios / First dance",
+      "place": "Salón El Encanto"
+    },
+    {
+      "time": "21:00",
+      "title": "Pastel y brindis / Cake and toast",
+      "place": "Salón El Encanto"
+    },
+    {
+      "time": "01:00",
+      "title": "Cierre / End of celebration",
+      "place": "Salón El Encanto",
+      "notes": "El servicio de shuttle cierra a las 01:15."
+    }
+  ],
+  "dress_code": {
+    "summary": "Formal de cóctel.",
+    "details": "Se sugiere vestido de cóctel o traje / guayabera formal. Por favor no usar blanco, ivory ni crema, colores reservados para la novia. El jardín tiene césped: se recomiendan zapatos cómodos.",
+    "notes": "Cocktail attire. Guayaberas are welcome. Please do not wear white, ivory or cream."
+  },
+  "parking": {
+    "summary": "Valet gratuito en la entrada de la hacienda y shuttle desde el Centro Comercial El Encuentro.",
+    "details": "El valet opera desde las 15:00. Hay un shuttle gratuito desde el parqueo del Centro Comercial El Encuentro (estacionamiento norte) cada 20 minutos de 15:00 a 19:00, y de regreso entre 22:00 y 01:15. No estacionar en el hombro de la carretera.",
+    "notes": "Do not park on the highway shoulder. The last shuttle back leaves at 1:15 a.m."
+  },
+  "gifts": {
+    "summary": "Lluvia de sobres.",
+    "details": "Los novios prefieren una lluvia de sobres. No se reciben electrodomésticos. Si desean contribuir al viaje de novios, pueden hacerlo en el sobre o por transferencia a la cuenta que indicará la coordinadora el día del evento. No hay mesa de regalos pública.",
+    "notes": "Money envelopes are preferred. There is no public gift registry. Please do not bring appliances."
+  },
+  "contacts": [
+    {
+      "name": "Elena Castro",
+      "role": "Coordinadora de boda / Wedding coordinator",
+      "email": "elena.castro@boda-mendoza-solis.example.com",
+      "phone": "5550-0101"
+    },
+    {
+      "name": "Roberto Solís",
+      "role": "Contacto de la familia / Family contact",
+      "email": "roberto.solis@boda-mendoza-solis.example.com",
+      "phone": "5550-0102"
+    }
+  ]
+}
