@@ -1,2 +1,169 @@
-# boda-lista
-Boda Lista: hybrid on-device/cloud wedding helper built on Firebase AI Logic (#BuildHybridAI 2026)
+# Boda Lista
+
+Boda Lista helps a couple run their wedding from a desktop Chrome web app. Feature 1 is a guest question page: an invitee asks about the schedule, dress code, venue, parking, gifts, or contacts, and the answer has to come from the wedding sheet.
+
+The app is a `#BuildHybridAI` 2026 entry. Prompts go through Firebase AI Logic hybrid inference. Chrome uses Gemini Nano on the device when that model is available, and the same call falls back to the cloud Gemini model when it is not.
+
+The interface is Spanish first and also accepts English questions. Visual values are placeholders in `src/styles/tokens.css` and `src/styles/tokens.json` so a designer can restyle the app without editing components.
+
+## Hybrid architecture
+
+```mermaid
+flowchart TD
+  guest[Guest in desktop Chrome]
+  page[Guest question page]
+  sheet[Wedding sheet loader]
+  cache[localStorage cache]
+  ask["ask() in src/ai/hybrid.ts"]
+  nano[Gemini Nano on device]
+  cloud[Cloud Gemini]
+  logs[Firestore prompt_logs]
+  guest --> page
+  page --> sheet
+  sheet --> cache
+  page --> ask
+  ask -->|"prefer_on_device and model available"| nano
+  ask -->|"no model, long input, or low confidence"| cloud
+  ask --> logs
+```
+
+`ask(prompt, context)` always creates the model with `InferenceMode.PREFER_ON_DEVICE`. There is no force-on-device switch. The route badge reads the SDK `inferenceSource` (`on_device` or `in_cloud`). If that signal is missing, the app checks `window.LanguageModel.availability()`.
+
+Each call writes one `prompt_logs` document. The document stores sizes and routing metadata, never the prompt, the answer, or a guest name.
+
+| Field | Value |
+| --- | --- |
+| `ts` | UTC ISO timestamp |
+| `feature` | `qa`, `rsvp`, `songs`, `budget`, or `seating` |
+| `route` | `device` or `cloud` |
+| `fallback_reason` | `no_model`, `low_confidence`, `long_input`, or null |
+| `latency_ms` | Inference time |
+| `input_chars` | Characters sent to the model |
+| `output_chars` | Characters returned |
+| `model` | `gemini-nano` or the cloud model id |
+| `confidence` | Caller-supplied number, or null |
+| `session_id` | Random id stored in the browser |
+
+Cloud fallback reasons: `no_model` when Gemini Nano is not available, `long_input` when the prompt is over 8000 characters, and `low_confidence` when the caller passes a confidence below 0.5. A device route always stores a null reason.
+
+Guests can create those rows. Only a signed-in Google user can read them, from `/admin`. Firestore rules reject every other field, so a client cannot attach the question text.
+
+## Wedding sheet
+
+The sample event lives at `src/data/wedding_info.sample.json`. Names, the address, and the phone numbers are fake. `src/data/loadWeddingInfo.ts` loads that sample today and can later point at `data/wedding_info.json` when the shared data pack lands. The loader caches the sheet in `localStorage` so an on-device answer can still use it offline.
+
+If the sheet does not cover a question, the only acceptable answer is:
+
+`No tengo esa información, pregúntale a los novios`
+
+## Setup
+
+Requirements: Node.js 22 (the version used in CI) or newer, and a Firebase project with AI Logic, App Check (reCAPTCHA Enterprise), Firestore, Auth (Google), and Hosting. `npm install` may print an engine warning from the Firebase package. The app runs in the browser, and Node 22 is enough to build and test it.
+
+```bash
+npm install
+cp .env.example .env
+```
+
+Fill `.env` from Firebase console → Project settings, plus the reCAPTCHA Enterprise site key used for App Check. Do not commit `.env`. For local cloud calls, set `VITE_APPCHECK_DEBUG_TOKEN` to `true`, copy the token printed in the browser console, and register it under App Check → Manage debug tokens. You can also paste an already registered token into that variable. Production Hosting builds must leave the debug token unset.
+
+On-device inference needs desktop Chrome 139 or newer and the flag below. It does not need a network once the model is downloaded.
+
+## Run locally
+
+```bash
+npm run dev
+```
+
+Open the URL Vite prints (usually `http://127.0.0.1:5173`). The guest page is `/`. The organizer page is `/admin`.
+
+## Firebase emulators
+
+`.firebaserc` points at the demo project `demo-boda-lista`, which the emulators can start without a live service account.
+
+```bash
+npx firebase-tools emulators:start
+```
+
+In `.env`:
+
+```bash
+VITE_USE_EMULATORS=true
+```
+
+Then run `npm run dev`. Auth uses `http://127.0.0.1:9099` and Firestore uses `127.0.0.1:8080`. The emulator UI is `http://127.0.0.1:4000`. The emulators cover Auth and Firestore. Cloud Gemini requests still go to the real Firebase project, and on-device Gemini Nano does not use the emulator.
+
+Deploy rules and hosting to a real project with:
+
+```bash
+npx firebase-tools deploy --only firestore:rules,hosting
+```
+
+## Deploy
+
+Pushing to `main` runs `.github/workflows/firebase-hosting.yml`. It deploys to the live Hosting channel only when `FIREBASE_SERVICE_ACCOUNT` and `FIREBASE_PROJECT_ID` are set. If either secret is missing, the job skips and stays green. That workflow does not set `VITE_ENABLE_DEBUG`.
+
+Pull requests run `.github/workflows/firebase-hosting-preview.yml`. It publishes a preview channel per PR, expires the channel after 7 days, and comments the preview URL. It sets `VITE_ENABLE_DEBUG=true` for that build. It skips the same way when the Firebase secrets are missing.
+
+Optional build secrets, used when present: `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`, `VITE_FIREBASE_MEASUREMENT_ID`, `VITE_APPCHECK_SITE_KEY`, and `VITE_GEMINI_CLOUD_MODEL`.
+
+## Environment variables
+
+| Variable | Purpose |
+| --- | --- |
+| `VITE_FIREBASE_API_KEY` | Web app config |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Web app config |
+| `VITE_FIREBASE_PROJECT_ID` | Web app config |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Web app config |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Web app config |
+| `VITE_FIREBASE_APP_ID` | Web app config |
+| `VITE_FIREBASE_MEASUREMENT_ID` | Optional Analytics id |
+| `VITE_APPCHECK_SITE_KEY` | reCAPTCHA Enterprise site key |
+| `VITE_APPCHECK_DEBUG_TOKEN` | Local App Check debug token, or `true` |
+| `VITE_USE_EMULATORS` | `true` to use Auth and Firestore emulators |
+| `VITE_GEMINI_CLOUD_MODEL` | Optional. Default `gemini-3.5-flash-lite` |
+| `VITE_ENABLE_DEBUG` | Preview builds only. Leave unset in production |
+
+## Design tokens
+
+Colors, fonts, spacing, radii, and type sizes live in `src/styles/tokens.css` and the matching `src/styles/tokens.json`. Components only reference those variables. The current values are neutral placeholders: body text is 18px and controls are at least 48px tall so contrast and tap size stay at the accessibility floor until the design tokens arrive.
+
+## Testing instructions for judges
+
+Live URL: Firebase Hosting publishes this project at `https://<FIREBASE_PROJECT_ID>.web.app` (and `https://<FIREBASE_PROJECT_ID>.firebaseapp.com`) after the `main` workflow runs. This repo does not hard-code a project id. On a pull request, the preview workflow comments a temporary URL when `FIREBASE_SERVICE_ACCOUNT` and `FIREBASE_PROJECT_ID` are configured. That preview channel expires after 7 days.
+
+Guest pages do not require a login. `/` is the question page. `/admin` is optional and asks for Google sign-in only so an organizer can read `prompt_logs`.
+
+On-device test (this is the real Gemini Nano path):
+
+1. Use desktop Chrome 139 or newer (`chrome://settings/help`).
+2. Set `chrome://flags/#prompt-api-for-gemini-nano-multimodal-input` to Enabled and restart Chrome.
+3. In DevTools, `await LanguageModel.availability()` should be `available`, `downloadable`, or `downloading`. If it is `downloadable`, run `await LanguageModel.create()` and wait until it reports `available`.
+4. Ask a question on `/`. The badge **En tu teléfono** means the SDK reported `on_device`. The badge **En la nube** means the cloud model answered. The badge is the real route. Nothing in the app forces Nano.
+
+Unsupported devices: phones, browsers other than desktop Chrome, and Chrome without the Prompt API follow the `prefer_on_device` fallback. The guest still gets an answer from the cloud model (default `gemini-3.5-flash-lite`). The badge says **En la nube**, and `prompt_logs.fallback_reason` is `no_model` when the on-device model is missing. Offline, the sheet is served from `localStorage`. The cloud model cannot answer offline; Nano can, after it has been downloaded.
+
+`?debug=1` on preview channels and on `npm run dev`:
+
+- Preview Hosting builds set `VITE_ENABLE_DEBUG=true`, so `https://<preview>/?debug=1` shows the debug panel.
+- `npm run dev` shows the same panel at `http://127.0.0.1:5173/?debug=1`.
+- The production deploy does not set `VITE_ENABLE_DEBUG`. A production URL ignores `?debug=1`.
+
+The panel shows device-model availability, the route taken, whether an App Check token is present (`yes` or `no` only), and the last `prompt_log` document id from this browser session with `ts`, `feature`, `route`, `fallback_reason`, `latency_ms`, `input_chars`, `output_chars`, `model`, `confidence`, and `session_id`. It does not show the prompt, the answer, the App Check token, or guest names.
+
+App Check is initialized with reCAPTCHA Enterprise. For a local cloud call, register `VITE_APPCHECK_DEBUG_TOKEN` in the Firebase console. Do not ship that token in the public Hosting build.
+
+Out-of-scope check: ask something the sample sheet does not contain, in Spanish or English. The answer should be exactly `No tengo esa información, pregúntale a los novios`.
+
+## Tests
+
+```bash
+npm test
+npm run build
+npm run test:e2e
+npm run lhci
+```
+
+`npm test` covers the hybrid wrapper with a mocked SDK. `npm run test:e2e` writes mobile (390×844) and desktop screenshots to `docs/screenshots/`. `npm run lhci` fails if accessibility drops below 95.
+
+Third-party licenses are listed in `THIRD_PARTY.md`. The project license is Apache-2.0 (`LICENSE`).

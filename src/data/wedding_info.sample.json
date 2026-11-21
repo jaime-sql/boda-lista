@@ -1,0 +1,23 @@
+{
+  "event_name": "Boda de ejemplo",
+  "partners": ["Pareja A", "Pareja B"],
+  "date": "2026-09-12",
+  "schedule": [
+    { "time": "16:00", "activity": "Ceremonia" },
+    { "time": "17:30", "activity": "Cóctel" },
+    { "time": "19:00", "activity": "Cena" },
+    { "time": "21:00", "activity": "Baile" }
+  ],
+  "dress_code": "Formal de día. Evita el blanco.",
+  "venue": {
+    "name": "Jardín El Ejemplo",
+    "address": "Calle Falsa 123, Ciudad Demo",
+    "notes": "Ceremonia al aire libre. Hay sillas para todo el grupo."
+  },
+  "parking": "Estacionamiento gratuito en la calle lateral. Llega 20 minutos antes.",
+  "gifts": "Hay una mesa para sobres. No hay lista pública.",
+  "contacts": [
+    { "role": "Coordinación", "phone": "555-0100" },
+    { "role": "Día del evento", "phone": "555-0101" }
+  ]
+}
