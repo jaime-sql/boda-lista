@@ -1,0 +1,3 @@
+# Boda Lista synthetic data pack.
+# Python standard library only. No third-party packages.
+# Requires Python >= 3.10.
