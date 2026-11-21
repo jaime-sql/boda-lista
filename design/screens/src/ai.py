@@ -8,17 +8,21 @@ DEV=sum(f[2] for f in FEAT); CLD=sum(f[3] for f in FEAT); N=DEV+CLD
 DEV24=sum(f[2] for f in FEAT24); CLD24=sum(f[3] for f in FEAT24); N24=DEV24+CLD24
 REASONS=[('no_model','El teléfono no tiene el asistente integrado',50),('low_confidence','Respuesta poco segura (bajo el umbral de cada función)',35),('long_input','Texto muy largo para el teléfono',15)]
 assert sum(r[2] for r in REASONS)==CLD and N>=MIN and N24<MIN
-LOADED=dict(FEAT=FEAT,REASONS=REASONS,DEV=DEV,CLD=CLD,N=N)
+OFF={}
+LOADED=dict(FEAT=FEAT,REASONS=REASONS,DEV=DEV,CLD=CLD,N=N,OFF={})
 # No-threshold EXAMPLE (Captain's rule): guest_question has null high/cloud_cutoff, so every answer goes to the cloud
 # (reason no_threshold) except when the phone is offline: Nano answers, labelled "Respuesta poco segura",
 # logged route=device reason=offline_no_threshold. rsvp/song use DESIGN-EXAMPLE cut-offs (config.json is null for all three until ML's PR).
+# offline_no_threshold rows are route=device but get their OWN count (panel spec v1.1): never in the on-phone share or cloud calls saved.
 NT_OFFLINE=8
-NT_FEAT=[('guest_question','Preguntas de invitados',NT_OFFLINE,192),('rsvp','Confirmaciones',90,30),('song','Canciones',50,30)]
-NT_DEV=sum(f[2] for f in NT_FEAT); NT_CLD=sum(f[3] for f in NT_FEAT); NT_N=NT_DEV+NT_CLD
+NT_FEAT=[('guest_question','Preguntas de invitados',0,192),('rsvp','Confirmaciones',90,30),('song','Canciones',50,30)]
+NT_OFF={'guest_question':NT_OFFLINE}
+NT_DEV=sum(f[2] for f in NT_FEAT); NT_CLD=sum(f[3] for f in NT_FEAT); NT_N=NT_DEV+NT_CLD+NT_OFFLINE
 NT_REASONS=[('no_threshold','Sin umbral aún',192),('no_model','El teléfono no tiene el asistente integrado',30),('low_confidence','Respuesta poco segura (bajo el umbral de cada función)',20),('long_input','Texto muy largo para el teléfono',10)]
-NOTHR=dict(FEAT=NT_FEAT,REASONS=NT_REASONS,DEV=NT_DEV,CLD=NT_CLD,N=NT_N)
+NOTHR=dict(FEAT=NT_FEAT,REASONS=NT_REASONS,DEV=NT_DEV,CLD=NT_CLD,N=NT_N,OFF=NT_OFF)
 EXAMPLE_THR={'rsvp':{'high':0.85,'cloud_cutoff':0.60},'song':{'high':0.85,'cloud_cutoff':0.60}}  # design example only
-assert NT_N==N and sum(r[2] for r in NT_REASONS)==NT_CLD
+assert NT_N==400 and (NT_DEV,NT_CLD,NT_OFFLINE)==(140,252,8) and NT_DEV+NT_CLD+NT_OFFLINE==NT_N and round(NT_DEV*100/NT_N)==35
+assert sum(r[2] for r in NT_REASONS)==NT_CLD and sum(NT_OFF.values())==NT_OFFLINE
 assert dict((r[0],r[2]) for r in NT_REASONS)['no_threshold']==NT_FEAT[0][3]  # all guest_question cloud answers are no_threshold
 assert sum(r[2] for r in NT_REASONS if r[0]!='no_threshold')==sum(f[3] for f in NT_FEAT[1:])
 assert not has_threshold(cfg('guest_question'))
@@ -82,6 +86,9 @@ def header(mobile,state):
     mock='<span class="mock-chip">Datos de ejemplo · solo en el diseño</span>' if state in('loaded','few','error','offline','nothr') else ''
     return f'''<div class="ph"><div><p class="eyebrow">Inteligencia híbrida</p><h1 class="display">Cómo responde la IA</h1><p>Qué se respondió en el teléfono y qué tuvo que ir a la nube.</p></div><div class="row wrap gap-3">{mock}{seg}</div></div>'''
 
+def off_line():
+    o=sum(OFF.values())
+    return f'<span class="s" style="display:flex;align-items:center;gap:8px;margin-top:4px"><i class="swatch-off" aria-hidden="true"></i>{o} respondidas sin conexión, sin umbral (marcadas poco seguras)</span>' if o else ''
 def tiles(state):
     if state=='loading':
         sk=lambda: '<div class="card tile"><span class="skeleton" style="width:60%;height:18px"></span><span class="skeleton" style="width:45%;height:56px;margin-top:8px"></span><span class="skeleton" style="width:70%;height:16px;margin-top:6px"></span></div>'
@@ -93,7 +100,7 @@ def tiles(state):
 <div class="card tile"><span class="k">{I("cloud",18)}Llamadas a la nube ahorradas</span><span class="v">{DEV24}</span><span class="s">Respuestas sin usar la nube en las últimas 24 h</span></div>
 <div class="card tile"><span class="k">{I("clock",18)}Rapidez</span><div class="speed"><div><span class="badge badge-device">En tu teléfono</span><b>{DEV24} respuestas</b></div><div><span class="badge badge-cloud">En la nube</span><b>{CLD24} respuestas</b></div></div>{fn}</div></div>'''
     return f'''<div class="tiles">
-<div class="card tile"><span class="k">{I("phone",18)}Respondido en tu teléfono</span><span class="v">{round(DEV*100/N)}%</span><span class="s">{DEV} de {N} respuestas</span></div>
+<div class="card tile"><span class="k">{I("phone",18)}Respondido en tu teléfono</span><span class="v">{round(DEV*100/N)}%</span><span class="s">{DEV} de {N} respuestas</span>{off_line()}</div>
 <div class="card tile"><span class="k">{I("cloud",18)}Llamadas a la nube ahorradas</span><span class="v">{DEV}</span><span class="s">Respuestas que no necesitaron la nube</span></div>
 <div class="card tile"><span class="k">{I("clock",18)}Rapidez (mediana)</span><div class="speed"><div><span class="badge badge-device">En tu teléfono</span><span class="v display" style="font-weight:600">0,4 s</span></div><div><span class="badge badge-cloud">En la nube</span><span class="v display" style="font-weight:600">1,8 s</span></div></div><span class="s">p95: 0,9 s en el teléfono · 3,6 s en la nube</span></div></div>'''
 
@@ -103,20 +110,25 @@ def featbars(state):
     rows=''
     data=FEAT24 if state=='few' else FEAT
     for k,name,d,c in data:
-        n=d+c
+        o=OFF.get(k,0) if state=='nothr' else 0
+        n=d+c+o
         if state=='loading':
             rows+=f'<div class="frow"><div class="lab"><span class="skeleton" style="width:150px;height:18px"></span></div><span class="skeleton" style="height:28px"></span><span class="skeleton" style="height:16px"></span></div>'; continue
         if n<MIN:
             bar=f'<div class="split"><span class="few">{"Sin respuestas todavía" if n==0 else "Pocos datos aún · "+str(n)+(" respuesta" if n==1 else " respuestas")}</span></div>'
         else:
-            bar=f'<div class="split" role="img" aria-label="{d} en tu teléfono, {c} en la nube"><span class="dev" style="flex:{d}">{round(d*100/n)}%</span><span class="cld" style="flex:{c}">{100-round(d*100/n)}%</span></div>'
+            if o:
+                segs=(f'<span class="dev" style="flex:{d}">{round(d*100/n)}%</span>' if d else '')+f'<span class="off" style="flex:{o}" title="Sin conexión, sin umbral"></span><span class="cld" style="flex:{c}">{round(c*100/n)}%</span>'
+                bar=f'<div class="split" role="img" aria-label="{d} en tu teléfono, {o} sin conexión sin umbral, {c} en la nube">{segs}</div>'
+            else:
+                bar=f'<div class="split" role="img" aria-label="{d} en tu teléfono, {c} en la nube"><span class="dev" style="flex:{d}">{round(d*100/n)}%</span><span class="cld" style="flex:{c}">{100-round(d*100/n)}%</span></div>'
         thr=''
         if state=='nothr':
             b=THR[k]
-            thr=(f'<div class="thr">{NO_THRESHOLD}<span>No clasificamos en Alta / Media / Baja</span></div><div class="thr"><span>Las {d} del teléfono fueron sin conexión y se marcan «Respuesta poco segura» <code>offline_no_threshold</code></span></div>' if not has_threshold(b)
+            thr=(f'<div class="thr">{NO_THRESHOLD}<span>No clasificamos en Alta / Media / Baja</span></div><div class="thr"><span>{o} sin conexión, sin umbral, marcadas «Respuesta poco segura» <code>offline_no_threshold</code>. No cuentan como respondidas en tu teléfono.</span></div>' if not has_threshold(b)
                  else f'<div class="thr"><span class="conf-none" style="background:var(--color-surface-alt)" title="Umbral de ejemplo de diseño">Umbral {round(b["cloud_cutoff"]*100)}% (ejemplo)</span><span>Alta desde {round(b["high"]*100)}%</span></div>')
-        rows+=f'<div class="frow"><div class="lab"><b>{name}</b><span>{d} en tu teléfono · {c} en la nube</span>{thr}</div>{bar}<span class="n">{n}</span></div>'
-    leg=f'<div class="legend2">{DEVICE}{CLOUD}</div>'
+        rows+=f'<div class="frow"><div class="lab"><b>{name}</b><span>{d} en tu teléfono · {(str(o)+" sin conexión, sin umbral · ") if o else ""}{c} en la nube</span>{thr}</div>{bar}<span class="n">{n}</span></div>'
+    leg=f'<div class="legend2">{DEVICE}{CLOUD}'+('<span class="sm" style="display:inline-flex;align-items:center;gap:8px;font-weight:600"><i class="swatch-off" aria-hidden="true"></i>Sin conexión, sin umbral</span>' if state=='nothr' and OFF else '')+'</div>'
     return f'<section class="card"><div class="cardh"><h2>Por función</h2><span class="sm muted">Total de respuestas a la derecha</span></div>{leg}<div style="margin-top:var(--space-3)">{rows}</div></section>'
 
 def reasons(state):
@@ -132,7 +144,7 @@ def foot(state):
     if state=='loading': return '<div class="foot" aria-live="polite"><span>Cargando…</span></div>'
     if state=='nothr': state='loaded'
     t={'loaded':f'21 nov, 11:00 a. m. (hora SV) · {N} filas','few':f'21 nov, 11:00 a. m. (hora SV) · {N24} filas en 24 h','error':f'21 nov, 9:00 a. m. (hora SV) · {N} filas · copia guardada','offline':f'21 nov, 11:00 a. m. (hora SV) · {N} filas · copia guardada'}[state]
-    return f'<div class="foot"><span>Actualizado: {t}</span><span>Modelos: Gemini Nano {DEV} · Gemini en la nube {CLD} · Solo uso real (sin pruebas de carga)</span></div>' if state!='few' else f'<div class="foot"><span>Actualizado: {t}</span><span>Modelos: Gemini Nano {DEV24} · Gemini en la nube {CLD24} · Solo uso real</span></div>'
+    return f'<div class="foot"><span>Actualizado: {t}</span><span>Modelos: Gemini Nano {DEV+sum(OFF.values())} · Gemini en la nube {CLD} · Solo uso real (sin pruebas de carga)</span></div>' if state!='few' else f'<div class="foot"><span>Actualizado: {t}</span><span>Modelos: Gemini Nano {DEV24} · Gemini en la nube {CLD24} · Solo uso real</span></div>'
 
 def body(state,mobile):
     if state=='empty':
