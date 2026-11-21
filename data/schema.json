@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boda-lista.example.com/data/schema.json",
+  "title": "Boda Lista synthetic data pack",
+  "description": "Machine-readable schemas for the Boda Lista eval and app data pack. One definition per file or row type. All records are synthetic.",
+  "$defs": {
+    "rsvp": {
+      "$anchor": "rsvp",
+      "title": "RSVP reply row",
+      "description": "One WhatsApp-style RSVP reply. File: rsvp_replies.jsonl (hand-checked test). Future files: rsvp_dev_generated.jsonl (dev only), rsvp_stress.jsonl (stress only).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "split",
+        "task",
+        "text",
+        "lang",
+        "attending",
+        "party_size",
+        "meal_restrictions"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "split": { "type": "string", "enum": ["dev", "test", "stress"] },
+        "task": { "type": "string", "const": "rsvp" },
+        "text": { "type": "string", "minLength": 1 },
+        "lang": { "type": "string", "enum": ["es", "en"] },
+        "attending": { "type": "string", "enum": ["yes", "no", "maybe"] },
+        "party_size": {
+          "description": "Headcount stated in the message, or null if not stated.",
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "meal_restrictions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(vegetarian|vegan|gluten_free|kids_menu|allergy:[a-z][a-z0-9_]{0,31})$"
+          }
+        },
+        "kids_count": { "type": ["integer", "null"], "minimum": 0 },
+        "needs_ride": { "type": ["boolean", "null"] },
+        "ambiguous": { "type": "boolean" },
+        "household_id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "song": {
+      "$anchor": "song",
+      "title": "Song request row",
+      "description": "One guest song request. File: song_requests.jsonl.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "split",
+        "task",
+        "text",
+        "lang",
+        "title",
+        "artist",
+        "energy",
+        "ambiguous"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "split": { "type": "string", "enum": ["dev", "test", "stress"] },
+        "task": { "type": "string", "const": "song" },
+        "text": { "type": "string", "minLength": 1 },
+        "lang": { "type": "string", "enum": ["es", "en"] },
+        "title": {
+          "description": "Canonical song title, or null when the request is vague.",
+          "type": ["string", "null"],
+          "minLength": 1
+        },
+        "artist": {
+          "description": "Canonical artist. May be filled when named even if the title is vague; otherwise null.",
+          "type": ["string", "null"],
+          "minLength": 1
+        },
+        "energy": {
+          "type": ["string", "null"],
+          "enum": ["slow", "medium", "dance", null]
+        },
+        "ambiguous": { "type": "boolean" },
+        "household_id": { "type": "string", "minLength": 1 }
+      },
+      "if": {
+        "properties": { "ambiguous": { "const": true } },
+        "required": ["ambiguous"]
+      },
+      "then": {
+        "properties": { "title": { "type": "null" } }
+      },
+      "else": {
+        "properties": {
+          "title": { "type": "string", "minLength": 1 },
+          "artist": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "guest_question": {
+      "$anchor": "guest_question",
+      "title": "Guest Q&A question row",
+      "description": "One guest question against wedding_info.json. File: guest_questions.jsonl. Out-of-scope gold answer is the locked phrase.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "split", "task", "text", "lang", "answer", "out_of_scope"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "split": { "type": "string", "enum": ["dev", "test", "stress"] },
+        "task": { "type": "string", "const": "guest_question" },
+        "text": { "type": "string", "minLength": 1 },
+        "lang": { "type": "string", "enum": ["es", "en"] },
+        "answer": { "type": "string", "minLength": 1 },
+        "out_of_scope": { "type": "boolean" }
+      },
+      "if": {
+        "properties": { "out_of_scope": { "const": true } },
+        "required": ["out_of_scope"]
+      },
+      "then": {
+        "properties": {
+          "answer": {
+            "const": "No tengo esa información, pregúntale a los novios"
+          }
+        }
+      }
+    },
+    "wedding_info": {
+      "$anchor": "wedding_info",
+      "title": "Wedding info sheet",
+      "description": "Fake, clearly marked-synthetic info sheet used by guest Q&A. File: wedding_info.json. Readable twin: info_sheet.md.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "synthetic",
+        "disclaimer",
+        "couple",
+        "date",
+        "timezone",
+        "schedule",
+        "venue",
+        "dress_code",
+        "parking",
+        "gifts",
+        "contacts"
+      ],
+      "properties": {
+        "synthetic": { "type": "boolean", "const": true },
+        "disclaimer": { "type": "string", "minLength": 1 },
+        "couple": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["bride", "groom"],
+          "properties": {
+            "bride": { "$ref": "#/$defs/person_name" },
+            "groom": { "$ref": "#/$defs/person_name" }
+          }
+        },
+        "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "timezone": { "type": "string", "minLength": 1 },
+        "schedule": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/schedule_item" }
+        },
+        "venue": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "address", "city", "country"],
+          "properties": {
+            "name": { "type": "string", "minLength": 1 },
+            "address": { "type": "string", "minLength": 1 },
+            "city": { "type": "string", "minLength": 1 },
+            "country": { "type": "string", "minLength": 1 },
+            "ceremony_area": { "type": "string" },
+            "reception_area": { "type": "string" },
+            "notes": { "type": "string" }
+          }
+        },
+        "dress_code": { "$ref": "#/$defs/info_block" },
+        "parking": { "$ref": "#/$defs/info_block" },
+        "gifts": { "$ref": "#/$defs/info_block" },
+        "contacts": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/contact" }
+        }
+      }
+    },
+    "person_name": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["first_name", "last_name"],
+      "properties": {
+        "first_name": { "type": "string", "minLength": 1 },
+        "last_name": { "type": "string", "minLength": 1 }
+      }
+    },
+    "schedule_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["time", "title"],
+      "properties": {
+        "time": { "type": "string", "pattern": "^[0-9]{2}:[0-9]{2}$" },
+        "title": { "type": "string", "minLength": 1 },
+        "place": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "info_block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary"],
+      "properties": {
+        "summary": { "type": "string", "minLength": 1 },
+        "details": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "contact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "role"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "role": { "type": "string", "minLength": 1 },
+        "email": { "type": "string", "pattern": "^[^@]+@([A-Za-z0-9.-]*example\\.com)$" },
+        "phone": { "type": "string", "pattern": "555" }
+      }
+    }
+  }
+}
