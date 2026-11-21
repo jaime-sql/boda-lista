@@ -3,8 +3,8 @@ from playwright.sync_api import sync_playwright
 D='/workspace/hack-ux/boda-lista/screens'
 G=[('Invitados · F1 preguntas y F2 RSVP (390)',['guest-qa-device','guest-qa-cloud','guest-qa-offline','guest-qa-idk','rsvp-form','rsvp-success','sign-in'],'m'),
    ('Novios · respuestas y lista (1440 / 390)',['couple-parse','headcount-desktop','headcount-mobile'],'x'),
-   ('Cómo responde la IA · escritorio 1440 (cargado, cargando, vacío, error, pocos datos)',['ai-loaded-desktop','ai-loading-desktop','ai-empty-desktop','ai-error-desktop','ai-few-desktop'],'d'),
-   ('Cómo responde la IA · móvil 390',['ai-loaded-mobile','ai-loading-mobile','ai-empty-mobile','ai-error-mobile','ai-few-mobile'],'m'),
+   ('Cómo responde la IA · escritorio 1440 (cargado, cargando, vacío, error, sin conexión, pocos datos)',['ai-loaded-desktop','ai-loading-desktop','ai-empty-desktop','ai-error-desktop','ai-offline-desktop','ai-few-desktop'],'d'),
+   ('Cómo responde la IA · móvil 390',['ai-loaded-mobile','ai-loading-mobile','ai-empty-mobile','ai-error-mobile','ai-offline-mobile','ai-few-mobile'],'m'),
    ('Proveedores y presupuesto · F3 (1440)',['budget-quote-desktop','budget-board-desktop'],'d'),
    ('Proveedores y presupuesto · F3 (390)',['budget-quote-mobile','budget-board-mobile'],'m')]
 sec=''

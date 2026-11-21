@@ -1,9 +1,13 @@
 from common import *
 MIN=MIN_SAMPLE
 # MOCK example data (round, obviously fake). Real panel reads /rollup JSON (source=live only).
-FEAT=[('guest_question','Preguntas de invitados',156,38),('rsvp','Respuestas (RSVP)',90,30),('song','Canciones',40,20),('budget','Presupuesto',10,10),('seating','Mesas',4,2)]
-FEAT24=[('guest_question','Preguntas de invitados',6,2),('rsvp','Respuestas (RSVP)',3,1),('song','Canciones',0,0),('budget','Presupuesto',0,0),('seating','Mesas',0,0)]
+# by_feature keys = schema task values (panel spec v1.1): guest_question, rsvp, song only. EXAMPLE numbers.
+FEAT=[('guest_question','Preguntas de invitados',160,40),('rsvp','Confirmaciones',90,30),('song','Canciones',50,30)]
+FEAT24=[('guest_question','Preguntas de invitados',6,2),('rsvp','Confirmaciones',3,1),('song','Canciones',0,0)]
+DEV=sum(f[2] for f in FEAT); CLD=sum(f[3] for f in FEAT); N=DEV+CLD
+DEV24=sum(f[2] for f in FEAT24); CLD24=sum(f[3] for f in FEAT24); N24=DEV24+CLD24
 REASONS=[('no_model','El teléfono no tiene el asistente integrado',50),('low_confidence',f'Respuesta poco segura (menos de {round(cfg("guest_question")["cloud_cutoff"]*100)}%)',35),('long_input','Texto muy largo para el teléfono',15)]
+assert sum(r[2] for r in REASONS)==CLD and N>=MIN and N24<MIN
 
 CSS='''
 .wrapd{padding:var(--space-8) var(--space-10) var(--space-12)}
@@ -56,7 +60,7 @@ M_CSS='''
 '''
 def header(mobile,state):
     seg='<div class="seg" role="group" aria-label="Periodo"><span class="'+('' if state=='few' else 'on')+'">Todo</span><span class="'+('on' if state=='few' else '')+'">Últimas 24 h</span></div>'
-    mock='<span class="mock-chip">Datos de ejemplo · solo en el diseño</span>' if state in('loaded','few','error') else ''
+    mock='<span class="mock-chip">Datos de ejemplo · solo en el diseño</span>' if state in('loaded','few','error','offline') else ''
     return f'''<div class="ph"><div><p class="eyebrow">Inteligencia híbrida</p><h1 class="display">Cómo responde la IA</h1><p>Qué se respondió en el teléfono y qué tuvo que ir a la nube.</p></div><div class="row wrap gap-3">{mock}{seg}</div></div>'''
 
 def tiles(state):
@@ -66,12 +70,12 @@ def tiles(state):
     if state=='few':
         fn='<span class="few-note">'+I('info',16)+'Pocos datos aún</span>'
         return f'''<div class="tiles">
-<div class="card tile"><span class="k">{I("phone",18)}Respondido en tu teléfono</span><span class="v">9 <small>de 12</small></span>{fn}<span class="s">Mostramos el porcentaje desde {MIN} preguntas.</span></div>
-<div class="card tile"><span class="k">{I("cloud",18)}Llamadas a la nube ahorradas</span><span class="v">9</span><span class="s">Respuestas sin usar la nube en las últimas 24 h</span></div>
-<div class="card tile"><span class="k">{I("clock",18)}Rapidez</span><div class="speed"><div><span class="badge badge-device">En tu teléfono</span><b>9 respuestas</b></div><div><span class="badge badge-cloud">En la nube</span><b>3 respuestas</b></div></div>{fn}</div></div>'''
+<div class="card tile"><span class="k">{I("phone",18)}Respondido en tu teléfono</span><span class="v">{DEV24} <small>de {N24}</small></span>{fn}<span class="s">Mostramos el porcentaje desde {MIN} respuestas.</span></div>
+<div class="card tile"><span class="k">{I("cloud",18)}Llamadas a la nube ahorradas</span><span class="v">{DEV24}</span><span class="s">Respuestas sin usar la nube en las últimas 24 h</span></div>
+<div class="card tile"><span class="k">{I("clock",18)}Rapidez</span><div class="speed"><div><span class="badge badge-device">En tu teléfono</span><b>{DEV24} respuestas</b></div><div><span class="badge badge-cloud">En la nube</span><b>{CLD24} respuestas</b></div></div>{fn}</div></div>'''
     return f'''<div class="tiles">
-<div class="card tile"><span class="k">{I("phone",18)}Respondido en tu teléfono</span><span class="v">75%</span><span class="s">300 de 400 respuestas</span></div>
-<div class="card tile"><span class="k">{I("cloud",18)}Llamadas a la nube ahorradas</span><span class="v">300</span><span class="s">Respuestas que no necesitaron la nube</span></div>
+<div class="card tile"><span class="k">{I("phone",18)}Respondido en tu teléfono</span><span class="v">{round(DEV*100/N)}%</span><span class="s">{DEV} de {N} respuestas</span></div>
+<div class="card tile"><span class="k">{I("cloud",18)}Llamadas a la nube ahorradas</span><span class="v">{DEV}</span><span class="s">Respuestas que no necesitaron la nube</span></div>
 <div class="card tile"><span class="k">{I("clock",18)}Rapidez (mediana)</span><div class="speed"><div><span class="badge badge-device">En tu teléfono</span><span class="v display" style="font-weight:600">0,4 s</span></div><div><span class="badge badge-cloud">En la nube</span><span class="v display" style="font-weight:600">1,8 s</span></div></div><span class="s">p95: 0,9 s en el teléfono · 3,6 s en la nube</span></div></div>'''
 
 def featbars(state):
@@ -84,7 +88,7 @@ def featbars(state):
         if n<MIN:
             bar=f'<div class="split"><span class="few">{"Sin respuestas todavía" if n==0 else "Pocos datos aún · "+str(n)+(" respuesta" if n==1 else " respuestas")}</span></div>'
         else:
-            bar=f'<div class="split" role="img" aria-label="{d} en tu teléfono, {c} en la nube"><span class="dev" style="flex:{d}">{round(d*100/n)}%</span><span class="cld" style="flex:{c}">{round(c*100/n)}%</span></div>'
+            bar=f'<div class="split" role="img" aria-label="{d} en tu teléfono, {c} en la nube"><span class="dev" style="flex:{d}">{round(d*100/n)}%</span><span class="cld" style="flex:{c}">{100-round(d*100/n)}%</span></div>'
         rows+=f'<div class="frow"><div class="lab"><b>{name}</b><span>{d} en tu teléfono · {c} en la nube</span></div>{bar}<span class="n">{n}</span></div>'
     leg=f'<div class="legend2">{DEVICE}{CLOUD}</div>'
     return f'<section class="card"><div class="cardh"><h2>Por función</h2><span class="sm muted">Total de respuestas a la derecha</span></div>{leg}<div style="margin-top:var(--space-3)">{rows}</div></section>'
@@ -100,8 +104,8 @@ def reasons(state):
 
 def foot(state):
     if state=='loading': return '<div class="foot" aria-live="polite"><span>Cargando…</span></div>'
-    t={'loaded':'21 nov, 11:00 a. m. (hora SV) · 400 filas','few':'21 nov, 11:00 a. m. (hora SV) · 12 filas en 24 h','error':'21 nov, 9:00 a. m. (hora SV) · 400 filas · copia guardada'}[state]
-    return f'<div class="foot"><span>Actualizado: {t}</span><span>Modelos: Gemini Nano 300 · Gemini en la nube 100 · Solo uso real (sin pruebas de carga)</span></div>' if state!='few' else f'<div class="foot"><span>Actualizado: {t}</span><span>Modelos: Gemini Nano 9 · Gemini en la nube 3 · Solo uso real</span></div>'
+    t={'loaded':f'21 nov, 11:00 a. m. (hora SV) · {N} filas','few':f'21 nov, 11:00 a. m. (hora SV) · {N24} filas en 24 h','error':f'21 nov, 9:00 a. m. (hora SV) · {N} filas · copia guardada','offline':f'21 nov, 11:00 a. m. (hora SV) · {N} filas · copia guardada'}[state]
+    return f'<div class="foot"><span>Actualizado: {t}</span><span>Modelos: Gemini Nano {DEV} · Gemini en la nube {CLD} · Solo uso real (sin pruebas de carga)</span></div>' if state!='few' else f'<div class="foot"><span>Actualizado: {t}</span><span>Modelos: Gemini Nano {DEV24} · Gemini en la nube {CLD24} · Solo uso real</span></div>'
 
 def body(state,mobile):
     if state=='empty':
@@ -110,11 +114,14 @@ def body(state,mobile):
         pre=''
         if state=='error':
             pre=f'<div class="banner banner-error" role="alert" style="margin-bottom:var(--space-4)">{I("info",22)}<div style="flex:1"><b>No pudimos actualizar.</b> Te mostramos la última copia guardada, del 21 nov a las 9:00 a. m.</div><button class="btn btn-secondary" style="background:var(--color-surface)">{I("refresh")}Reintentar</button></div>'
-        stale=' is-stale' if state=='error' else ''
-        inner=pre+f'<div class="{stale.strip()}">'+tiles(state if state!='error' else 'loaded')+f'<div class="grid2">{featbars(state if state!="error" else "loaded")}{reasons(state if state!="error" else "loaded")}</div>{foot(state)}</div>'
+        if state=='offline':
+            pre=f'<div class="banner banner-offline" role="status" style="margin-bottom:var(--space-4)">{I("wifioff",22)}<div style="flex:1"><b>Sin conexión.</b> Te mostramos la última copia guardada, del 21 nov a las 11:00 a. m. Se actualiza sola al volver la señal.</div></div>'
+        snap=state in ('error','offline')
+        ds='loaded' if snap else state
+        inner=pre+f'<div class="{"is-stale" if snap else ""}">'+tiles(ds)+f'<div class="grid2">{featbars(ds)}{reasons(ds)}</div>{foot(state)}</div>'
     return header(mobile,state)+inner
 
-STATES=['loaded','loading','empty','error','few']
+STATES=['loaded','loading','empty','error','offline','few']
 for st in STATES:
     d=topnav('Cómo responde la IA')+f'<main class="wrapd">{body(st,False)}</main>'
     open(f'../ai-{st}-desktop.html','w').write(page(f'Cómo responde la IA · {st}',d,1440,CSS))

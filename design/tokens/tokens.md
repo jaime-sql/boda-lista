@@ -268,8 +268,8 @@ This is the key hybrid-AI element. It goes on every AI answer and every parsed r
 | guest-qa-device, guest-qa-cloud, guest-qa-offline, guest-qa-idk, rsvp-form, rsvp-success, sign-in | 390 | `guest.py` |
 | couple-parse, headcount-desktop | 1440 | `couple.py` |
 | headcount-mobile | 390 | `couple.py` |
-| ai-loaded / ai-loading / ai-empty / ai-error / ai-few `-desktop` | 1440 | `ai.py` |
-| ai-loaded / ai-loading / ai-empty / ai-error / ai-few `-mobile` | 390 | `ai.py` |
+| ai-loaded / ai-loading / ai-empty / ai-error / ai-offline / ai-few `-desktop` | 1440 | `ai.py` |
+| ai-loaded / ai-loading / ai-empty / ai-error / ai-offline / ai-few `-mobile` | 390 | `ai.py` |
 | budget-quote-desktop, budget-board-desktop | 1440 | `budget.py` |
 | budget-quote-mobile, budget-board-mobile | 390 | `budget.py` |
 
@@ -277,7 +277,7 @@ Rebuild: `cd screens/src && python3 guest.py && python3 couple.py && python3 ai.
 
 **Navigation:** the desktop top nav is Resumen · Respuestas · Invitados · Presupuesto · Cómo responde la IA (`common.topnav`). The mobile tab bar is Inicio · Invitados · Presupuesto · IA (`common.mobile_tabs`).
 
-## 8. "Cómo responde la IA" tab (follows Hack Analytics' panel spec)
+## 8. "Cómo responde la IA" tab (follows Hack Analytics' panel spec v1.1)
 > **All numbers on these screens are EXAMPLE DATA ("Datos de ejemplo").** They are round and invented on purpose (400 answers, 300 on the phone, 0.4 s versus 1.8 s). The mockups show a dashed `.mock-chip` reading "Datos de ejemplo · solo en el diseño". **Do not build the chip or these values.** The real panel renders only the `/rollup` JSON (source = live), as the spec requires.
 
 - **Header:** the eyebrow "Inteligencia híbrida", H1 "Cómo responde la IA", and a period `.seg` toggle with **Todo** and **Últimas 24 h** (the spec's two windows).
@@ -285,8 +285,9 @@ Rebuild: `cd screens/src && python3 guest.py && python3 couple.py && python3 ai.
   1. **Respondido en tu teléfono:** the device share as a % plus "300 de 400 respuestas".
   2. **Llamadas a la nube ahorradas:** the count of device answers.
   3. **Rapidez (mediana):** device p50 versus cloud p50, each labelled with the exact badge, plus p95 as a sub-line.
-- **Bar by feature** (`.split`): one row per `task` (guest_question → Preguntas de invitados, rsvp → Respuestas (RSVP), song → Canciones). The mockup also shows Presupuesto and Mesas rows as example data; they get real keys only once those features are built.
-  - The green segment is `--color-device-fg` (En tu teléfono) and the gold one is `--color-cloud-fg` (En la nube). Both carry white % labels (8.0:1 and 6.8:1), the row carries the text "156 en tu teléfono · 38 en la nube", and the total sits on the right. The meaning never relies on colour alone.
+- **Bar by feature** (`.split`): exactly one row per `/rollup` `by_feature` key, which are the schema `task` values: `guest_question` → **Preguntas de invitados**, `rsvp` → **Confirmaciones**, `song` → **Canciones**. There are no Presupuesto or Mesas rows; budget and seating get rows only once they're built and have keys.
+  - **Example numbers:** guest_question 160 / 40, rsvp 90 / 30, song 50 / 30 (device / cloud). The tiles are their sums: 300 of 400 on the phone (75%), 300 cloud calls saved, 100 to the cloud, and the reasons add up to 100 (50 / 35 / 15). `ai.py` computes the tiles from the rows and asserts this.
+  - The green segment is `--color-device-fg` (En tu teléfono) and the gold one is `--color-cloud-fg` (En la nube). Both carry white % labels (8.0:1 and 6.8:1), the row carries the text "160 en tu teléfono · 40 en la nube", and the total sits on the right. The meaning never relies on colour alone.
   - The badge legend sits above the rows.
 - **Reasons list** ("¿Por qué fue a la nube?"):
   - `no_model` → "El teléfono no tiene el asistente integrado"
@@ -294,7 +295,7 @@ Rebuild: `cd screens/src && python3 guest.py && python3 couple.py && python3 ai.
   - `long_input` → "Texto muy largo para el teléfono"
   - Each reason shows its count, its share and a thin bar. The raw reason key is shown for the team.
 - **Footer:** "Actualizado: 21 nov, 11:00 a. m. (hora SV) · 400 filas", with the model mix as a footnote ("Gemini Nano 300 · Gemini en la nube 100 · Solo uso real").
-- **Minimum sample** (`config.json → analytics.min_sample`, 20; not `min_n`): below it, show the raw count plus the `.few-note` "Pocos datos aún" pill, and never a % or percentile. A feature row below it shows a hatched `.split .few` bar reading "Pocos datos aún · 6 respuestas", or "Sin respuestas todavía" at 0.
+- **Minimum sample** (`config.json → analytics.min_sample`, 20; not `min_n`): below it, show the raw count plus the `.few-note` "Pocos datos aún" pill, and never a % or percentile. A feature row below it shows a hatched `.split .few` bar reading "Pocos datos aún · 8 respuestas", or "Sin respuestas todavía" at 0. Use `null` from `/rollup` (never 0) as the signal, as the spec says.
 - **States:**
   | State | File | What shows |
   |---|---|---|
@@ -302,8 +303,8 @@ Rebuild: `cd screens/src && python3 guest.py && python3 couple.py && python3 ai.
   | Loading | ai-loading-* | `.skeleton` blocks in the exact tile/row/reason shapes, `aria-busy="true"` and "Cargando…" in `aria-live="polite"`. The shimmer stops under reduced motion. |
   | Empty | ai-empty-* | izote, "Aún no hay preguntas", the explanation, a primary "Compartir enlace con invitados" button and a secondary "Pegar respuestas" button |
   | Error | ai-error-* | a `.banner-error` (`role="alert"`) reading "No pudimos actualizar. Te mostramos la última copia guardada, del 21 nov a las 9:00 a. m.", plus "Reintentar". The last snapshot sits below it under `.is-stale` (greyscale filter, so text contrast is unchanged), and the footer says "copia guardada". |
-  | Pocos datos aún | ai-few-* | the "Últimas 24 h" window with 12 answers: tiles show "9 de 12", feature rows are hatched, and the reasons show counts only |
-- **Not drawn, per the spec:** the offline state reuses the error pattern with `.banner-offline` ("Sin conexión · mostrando la última copia").
+  | Offline | ai-offline-* | a `.banner-offline` (`role="status"`, wifi-off icon) reading "Sin conexión. Te mostramos la última copia guardada, del 21 nov a las 11:00 a. m. Se actualiza sola al volver la señal." The last snapshot sits below under `.is-stale`, and the footer says "copia guardada". There's no retry button, because it refreshes on reconnect. |
+  | Pocos datos aún | ai-few-* | the "Últimas 24 h" window with 12 answers (guest_question 6 / 2, rsvp 3 / 1, song 0 / 0): tiles show "9 de 12", every feature row is hatched, and the reasons show counts only (2 / 1 / 0) |
 
 ## 9. Vendors and budget (feature 3)
 > **The quotes come from the data pack: `data/vendor_quotes.jsonl` on `main` at `643e68d`** (8 rows, `synthetic: true`, USD). They are synthetic test data, so the screens keep the dashed chip "Datos de ejemplo · cotizaciones de prueba de data/". `screens/src/budget.py` reads the repo file when it exists and otherwise a pinned copy, `screens/src/vendor_quotes.snapshot.jsonl`. **Planeado ($13,000) is a design assumption, not data**, and is always labelled "(ejemplo)". Confidence % on the parsed lines are example values.
