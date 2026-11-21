@@ -11,32 +11,36 @@ import json
 from pathlib import Path
 from typing import Any
 
+from evals.feature_map import TASK_TO_FEATURE
+
 BACKENDS = ("rules", "gemma", "nano", "cloud", "hybrid")
 REPO_ROOT = Path(__file__).resolve().parents[1]
+_RSVP = TASK_TO_FEATURE["rsvp"]
+_SONGS = TASK_TO_FEATURE["song"]
 
-# (label, task or None for a run-level metric, key, kind)
+# (label, feature or None for a run-level metric, key, kind)
 METRIC_ROWS = (
-    ("RSVP all-fields correct", "rsvp", "all_fields_correct", "rate"),
-    ("RSVP attending accuracy", "rsvp", "attending_accuracy", "rate"),
-    ("RSVP attending macro-F1", "rsvp", "attending_macro_f1", "rate"),
-    ("RSVP party_size exact", "rsvp", "party_size_exact", "rate"),
-    ("RSVP meal_restrictions exact", "rsvp", "meal_restrictions_exact", "rate"),
-    ("RSVP meal_restrictions set-F1", "rsvp", "meal_restrictions_set_f1", "rate"),
-    ("RSVP kids_count exact", "rsvp", "kids_count_exact", "rate"),
-    ("RSVP needs_ride exact", "rsvp", "needs_ride_exact", "rate"),
-    ("RSVP ambiguous exact", "rsvp", "ambiguous_exact", "rate"),
-    ("RSVP force-definite on ambiguous", "rsvp", "ambiguous_force_rate", "rate"),
-    ("Song title+artist accuracy", "songs", "title_artist_accuracy", "rate"),
-    ("Song energy accuracy", "songs", "energy_accuracy", "rate"),
-    ("Song ambiguous recall", "songs", "ambiguous_recall", "rate"),
-    ("Song guess rate on ambiguous", "songs", "guess_rate", "rate"),
-    ("Song all-fields correct", "songs", "all_fields_correct", "rate"),
+    ("RSVP all-fields correct", _RSVP, "all_fields_correct", "rate"),
+    ("RSVP attending accuracy", _RSVP, "attending_accuracy", "rate"),
+    ("RSVP attending macro-F1", _RSVP, "attending_macro_f1", "rate"),
+    ("RSVP party_size exact", _RSVP, "party_size_exact", "rate"),
+    ("RSVP meal_restrictions exact", _RSVP, "meal_restrictions_exact", "rate"),
+    ("RSVP meal_restrictions set-F1", _RSVP, "meal_restrictions_set_f1", "rate"),
+    ("RSVP kids_count exact", _RSVP, "kids_count_exact", "rate"),
+    ("RSVP needs_ride exact", _RSVP, "needs_ride_exact", "rate"),
+    ("RSVP ambiguous exact", _RSVP, "ambiguous_exact", "rate"),
+    ("RSVP force-definite on ambiguous", _RSVP, "ambiguous_force_rate", "rate"),
+    ("Song title+artist accuracy", _SONGS, "title_artist_accuracy", "rate"),
+    ("Song energy accuracy", _SONGS, "energy_accuracy", "rate"),
+    ("Song ambiguous recall", _SONGS, "ambiguous_recall", "rate"),
+    ("Song guess rate on ambiguous", _SONGS, "guess_rate", "rate"),
+    ("Song all-fields correct", _SONGS, "all_fields_correct", "rate"),
     ("Invalid JSON", None, "invalid_json_rate", "rate"),
     ("Latency p50 (ms)", None, "latency_p50", "ms"),
     ("Latency p95 (ms)", None, "latency_p95", "ms"),
     ("Estimated USD per 1,000", None, "cost_usd_per_1000", "usd"),
-    ("On-device share", "rsvp", "on_device_share", "rate"),
-    ("RSVP threshold", "rsvp", "threshold", "threshold"),
+    ("On-device share", _RSVP, "on_device_share", "rate"),
+    ("RSVP threshold", _RSVP, "threshold", "threshold"),
 )
 
 
@@ -147,13 +151,13 @@ def render_markdown(summaries: dict[str, dict[str, Any]]) -> str:
         lines.append(f"| {label} | " + " | ".join(cells) + " |")
     lines.append("")
     hybrid = summaries.get("hybrid")
-    for task, label in (("rsvp", "RSVP"), ("songs", "Songs")):
-        note = _routing_note(hybrid, task)
+    for feature, label in ((_RSVP, "RSVP"), (_SONGS, "Songs")):
+        note = _routing_note(hybrid, feature)
         if note:
             lines.append(f"{label} routing: {note}")
             lines.append("")
-    if hybrid and hybrid.get("routing", {}).get("rsvp", {}).get("threshold") is not None:
-        threshold = hybrid["routing"]["rsvp"]["threshold"]
+    if hybrid and hybrid.get("routing", {}).get(_RSVP, {}).get("threshold") is not None:
+        threshold = hybrid["routing"][_RSVP]["threshold"]
         lines.append(
             f"RSVP threshold {float(threshold):.2f} was selected on the dev split "
             "and applied once to the test split."
@@ -172,8 +176,8 @@ def render_markdown(summaries: dict[str, dict[str, Any]]) -> str:
         by_lang = section.get("by_lang") or {}
         for lang, block in sorted(by_lang.items()):
             wrote_lang = True
-            rsvp = format_metric((block.get("rsvp") or {}).get("all_fields_correct"), "rate", ran=True)
-            song = format_metric((block.get("songs") or {}).get("all_fields_correct"), "rate", ran=True)
+            rsvp = format_metric((block.get(_RSVP) or {}).get("all_fields_correct"), "rate", ran=True)
+            song = format_metric((block.get(_SONGS) or {}).get("all_fields_correct"), "rate", ran=True)
             lines.append(f"| {backend} | {lang} | {rsvp} | {song} |")
     if not wrote_lang:
         lines.append("| not run | n/a | not run | not run |")

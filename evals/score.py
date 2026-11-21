@@ -18,6 +18,7 @@ from typing import Any
 
 from rapidfuzz import fuzz
 
+from evals.feature_map import TASK_TO_FEATURE
 from evals.guest_questions import UNKNOWN_ANSWER
 from evals.loader import load_paths
 from evals.parsing import resolve_prediction
@@ -345,8 +346,12 @@ def _block(items: list[dict[str, Any]], *, with_lang: bool = False) -> dict[str,
             "p95": percentile(latencies, 95),
             "n": len(latencies),
         },
-        "rsvp": _rsvp_metrics([item for item in items if item["gold"]["task"] == "rsvp"]),
-        "songs": _song_metrics([item for item in items if item["gold"]["task"] == "song"]),
+        TASK_TO_FEATURE["rsvp"]: _rsvp_metrics(
+            [item for item in items if item["gold"]["task"] == "rsvp"]
+        ),
+        TASK_TO_FEATURE["song"]: _song_metrics(
+            [item for item in items if item["gold"]["task"] == "song"]
+        ),
     }
     if with_lang:
         grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -406,8 +411,8 @@ def score_predictions(
         "latency_ms": overall["latency_ms"],
         "cost_usd_per_1000": cost_per_thousand(backend, overall["n"], meta),
         "fuzzy_threshold": FUZZY_THRESHOLD,
-        "rsvp": overall["rsvp"],
-        "songs": overall["songs"],
+        TASK_TO_FEATURE["rsvp"]: overall[TASK_TO_FEATURE["rsvp"]],
+        TASK_TO_FEATURE["song"]: overall[TASK_TO_FEATURE["song"]],
         "by_lang": overall.get("by_lang", {}),
         "by_split": by_split,
     }
