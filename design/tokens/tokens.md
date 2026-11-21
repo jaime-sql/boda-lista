@@ -163,7 +163,7 @@ This is the key hybrid-AI element. It goes on every AI answer and every parsed r
 - **Offline:** a `.banner-offline` banner (cacao background, wifi-off icon) at the top of the chat reads "Sin señal. Igual te respondemos desde tu teléfono…". The composer stays enabled, and the answers carry "En tu teléfono".
 - **Cloud fallback:** a `.banner-info` banner (gold) appears once per session when the device has no on-device model.
 - **I don't know:**
-  - The bubble has an accent-soft background and border, and the title "Eso no lo sabemos todavía".
+  - The bubble has an accent-soft background and border, and the title exactly "No tengo esa información, pregúntale a los novios" (locked copy, must match the eval gold answer).
   - It has a primary **"Pregúntale a los novios"** button, which opens WhatsApp to the couple's contact from `wedding_info.json → contacts`.
   - Below it is a quiet "Hacer otra pregunta" button.
   - It still carries the source badge.
