@@ -137,3 +137,5 @@ textarea.input{padding:var(--space-4);line-height:var(--leading-normal)}
 .split .cld{background:var(--color-cloud-fg)}
 .split .few{flex:1;background:repeating-linear-gradient(135deg,var(--color-neutral-bg) 0 8px,var(--color-surface) 8px 16px);border:1px dashed var(--color-border-strong);border-radius:var(--radius-sm)}
 .money{font-variant-numeric:tabular-nums}
+/* No threshold yet (config cloud_cutoff/high is null): neutral chip, no Alta/Media/Baja */
+.conf-none{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:var(--radius-pill);background:var(--color-neutral-bg);color:var(--color-text);font-size:var(--text-sm);font-weight:var(--weight-semibold);white-space:nowrap}

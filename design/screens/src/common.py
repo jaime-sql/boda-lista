@@ -105,14 +105,20 @@ CONFIG=_json.load(open(_os.path.join(_os.path.dirname(__file__),'../../tokens/co
 MIN_SAMPLE=CONFIG['analytics']['min_sample']  # panel 'Pocos datos aún' minimum (not min_n, which is the eval threshold)
 def cfg(task):
     return CONFIG[task]
+def has_threshold(b):
+    # config.json allows null for high / cloud_cutoff (no dev split yet). Any null -> no bands.
+    return b.get('high') is not None and b.get('cloud_cutoff') is not None
 def band_from(pct,b):
+    if not has_threshold(b): return None
     p=pct/100
     # high >= high; medium >= cloud_cutoff and < high; below cloud_cutoff -> cloud
     return 'high' if p>=b['high'] else ('mid' if p>=b['cloud_cutoff'] else 'low')
 def band(pct,task):
     return band_from(pct,cfg(task))
 BAND_LABEL={'high':'Alta','mid':'Media','low':'Baja'}
+NO_THRESHOLD=f'<span class="conf-none">Sin umbral</span>'
 def chip(pct,c,example=False):
+    if c is None: return NO_THRESHOLD
     t=' title="Banda de ejemplo de diseño"' if example else ''
     return f'<span class="conf {c}" data-confidence="{pct/100:.2f}"{t}><i><b></b><b></b><b></b></i>{BAND_LABEL[c]} {pct}%</span>'
 def conf(pct,task):

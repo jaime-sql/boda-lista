@@ -6,7 +6,7 @@ FEAT=[('guest_question','Preguntas de invitados',160,40),('rsvp','Confirmaciones
 FEAT24=[('guest_question','Preguntas de invitados',6,2),('rsvp','Confirmaciones',3,1),('song','Canciones',0,0)]
 DEV=sum(f[2] for f in FEAT); CLD=sum(f[3] for f in FEAT); N=DEV+CLD
 DEV24=sum(f[2] for f in FEAT24); CLD24=sum(f[3] for f in FEAT24); N24=DEV24+CLD24
-REASONS=[('no_model','El teléfono no tiene el asistente integrado',50),('low_confidence',f'Respuesta poco segura (menos de {round(cfg("guest_question")["cloud_cutoff"]*100)}%)',35),('long_input','Texto muy largo para el teléfono',15)]
+REASONS=[('no_model','El teléfono no tiene el asistente integrado',50),('low_confidence','Respuesta poco segura (bajo el umbral de cada función)',35),('long_input','Texto muy largo para el teléfono',15)]
 assert sum(r[2] for r in REASONS)==CLD and N>=MIN and N24<MIN
 
 CSS='''
@@ -42,6 +42,8 @@ CSS='''
 .emp{text-align:center;padding:var(--space-16) var(--space-6);display:flex;flex-direction:column;align-items:center;gap:var(--space-3)}
 .emp h2{font-family:var(--font-display);font-variation-settings:var(--font-display-variation);font-size:var(--text-2xl);font-weight:600}
 .emp p{max-width:520px;color:var(--color-text-muted)}
+.thr{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:8px}
+.thr>span:last-child{font-size:var(--text-sm);color:var(--color-text-muted)}
 .few-note{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:var(--radius-pill);background:var(--color-neutral-bg);font-size:var(--text-sm);font-weight:600}
 '''
 M_CSS='''
@@ -60,7 +62,7 @@ M_CSS='''
 '''
 def header(mobile,state):
     seg='<div class="seg" role="group" aria-label="Periodo"><span class="'+('' if state=='few' else 'on')+'">Todo</span><span class="'+('on' if state=='few' else '')+'">Últimas 24 h</span></div>'
-    mock='<span class="mock-chip">Datos de ejemplo · solo en el diseño</span>' if state in('loaded','few','error','offline') else ''
+    mock='<span class="mock-chip">Datos de ejemplo · solo en el diseño</span>' if state in('loaded','few','error','offline','nothr') else ''
     return f'''<div class="ph"><div><p class="eyebrow">Inteligencia híbrida</p><h1 class="display">Cómo responde la IA</h1><p>Qué se respondió en el teléfono y qué tuvo que ir a la nube.</p></div><div class="row wrap gap-3">{mock}{seg}</div></div>'''
 
 def tiles(state):
@@ -78,6 +80,9 @@ def tiles(state):
 <div class="card tile"><span class="k">{I("cloud",18)}Llamadas a la nube ahorradas</span><span class="v">{DEV}</span><span class="s">Respuestas que no necesitaron la nube</span></div>
 <div class="card tile"><span class="k">{I("clock",18)}Rapidez (mediana)</span><div class="speed"><div><span class="badge badge-device">En tu teléfono</span><span class="v display" style="font-weight:600">0,4 s</span></div><div><span class="badge badge-cloud">En la nube</span><span class="v display" style="font-weight:600">1,8 s</span></div></div><span class="s">p95: 0,9 s en el teléfono · 3,6 s en la nube</span></div></div>'''
 
+# No-threshold example: guest_question has no dev split yet (null), rsvp/song keep config placeholders.
+THR={k:dict(cfg(k)) for k in ('guest_question','rsvp','song')}
+THR['guest_question'].update(high=None,cloud_cutoff=None)
 def featbars(state):
     rows=''
     data=FEAT24 if state=='few' else FEAT
@@ -89,7 +94,12 @@ def featbars(state):
             bar=f'<div class="split"><span class="few">{"Sin respuestas todavía" if n==0 else "Pocos datos aún · "+str(n)+(" respuesta" if n==1 else " respuestas")}</span></div>'
         else:
             bar=f'<div class="split" role="img" aria-label="{d} en tu teléfono, {c} en la nube"><span class="dev" style="flex:{d}">{round(d*100/n)}%</span><span class="cld" style="flex:{c}">{100-round(d*100/n)}%</span></div>'
-        rows+=f'<div class="frow"><div class="lab"><b>{name}</b><span>{d} en tu teléfono · {c} en la nube</span></div>{bar}<span class="n">{n}</span></div>'
+        thr=''
+        if state=='nothr':
+            b=THR[k]
+            thr=(f'<div class="thr">{NO_THRESHOLD}<span>No clasificamos en Alta / Media / Baja</span></div>' if not has_threshold(b)
+                 else f'<div class="thr"><span class="conf-none" style="background:var(--color-surface-alt)">Umbral {round(b["cloud_cutoff"]*100)}%</span><span>Alta desde {round(b["high"]*100)}%</span></div>')
+        rows+=f'<div class="frow"><div class="lab"><b>{name}</b><span>{d} en tu teléfono · {c} en la nube</span>{thr}</div>{bar}<span class="n">{n}</span></div>'
     leg=f'<div class="legend2">{DEVICE}{CLOUD}</div>'
     return f'<section class="card"><div class="cardh"><h2>Por función</h2><span class="sm muted">Total de respuestas a la derecha</span></div>{leg}<div style="margin-top:var(--space-3)">{rows}</div></section>'
 
@@ -104,6 +114,7 @@ def reasons(state):
 
 def foot(state):
     if state=='loading': return '<div class="foot" aria-live="polite"><span>Cargando…</span></div>'
+    if state=='nothr': state='loaded'
     t={'loaded':f'21 nov, 11:00 a. m. (hora SV) · {N} filas','few':f'21 nov, 11:00 a. m. (hora SV) · {N24} filas en 24 h','error':f'21 nov, 9:00 a. m. (hora SV) · {N} filas · copia guardada','offline':f'21 nov, 11:00 a. m. (hora SV) · {N} filas · copia guardada'}[state]
     return f'<div class="foot"><span>Actualizado: {t}</span><span>Modelos: Gemini Nano {DEV} · Gemini en la nube {CLD} · Solo uso real (sin pruebas de carga)</span></div>' if state!='few' else f'<div class="foot"><span>Actualizado: {t}</span><span>Modelos: Gemini Nano {DEV24} · Gemini en la nube {CLD24} · Solo uso real</span></div>'
 
@@ -114,16 +125,20 @@ def body(state,mobile):
         pre=''
         if state=='error':
             pre=f'<div class="banner banner-error" role="alert" style="margin-bottom:var(--space-4)">{I("info",22)}<div style="flex:1"><b>No pudimos actualizar.</b> Te mostramos la última copia guardada, del 21 nov a las 9:00 a. m.</div><button class="btn btn-secondary" style="background:var(--color-surface)">{I("refresh")}Reintentar</button></div>'
+        if state=='nothr':
+            pre=f'<div class="banner banner-info" role="status" style="margin-bottom:var(--space-4)">{I("info",22)}<div style="flex:1"><b>Preguntas de invitados aún no tiene umbral.</b> Sus respuestas se cuentan igual, pero no las clasificamos en Alta, Media o Baja hasta que haya un umbral.</div></div>'
         if state=='offline':
             pre=f'<div class="banner banner-offline" role="status" style="margin-bottom:var(--space-4)">{I("wifioff",22)}<div style="flex:1"><b>Sin conexión.</b> Te mostramos la última copia guardada, del 21 nov a las 11:00 a. m. Se actualiza sola al volver la señal.</div></div>'
         snap=state in ('error','offline')
         ds='loaded' if snap else state
-        inner=pre+f'<div class="{"is-stale" if snap else ""}">'+tiles(ds)+f'<div class="grid2">{featbars(ds)}{reasons(ds)}</div>{foot(state)}</div>'
+        if state=='nothr': ds='loaded'
+        inner=pre+f'<div class="{"is-stale" if snap else ""}">'+tiles(ds)+f'<div class="grid2">{featbars('nothr' if state=='nothr' else ds)}{reasons(ds)}</div>{foot(state)}</div>'
     return header(mobile,state)+inner
 
-STATES=['loaded','loading','empty','error','offline','few']
+STATES=['loaded','loading','empty','error','offline','few','nothr']
+FILE={'nothr':'no-threshold'}
 for st in STATES:
     d=topnav('Cómo responde la IA')+f'<main class="wrapd">{body(st,False)}</main>'
-    open(f'../ai-{st}-desktop.html','w').write(page(f'Cómo responde la IA · {st}',d,1440,CSS))
+    open(f'../ai-{FILE.get(st,st)}-desktop.html','w').write(page(f'Cómo responde la IA · {st}',d,1440,CSS))
     m=mobile_appbar()+f'<main class="wrapd">{body(st,True)}</main>'+mobile_tabs('IA')
-    open(f'../ai-{st}-mobile.html','w').write(page(f'Cómo responde la IA (móvil) · {st}',m,390,CSS+M_CSS))
+    open(f'../ai-{FILE.get(st,st)}-mobile.html','w').write(page(f'Cómo responde la IA (móvil) · {st}',m,390,CSS+M_CSS))

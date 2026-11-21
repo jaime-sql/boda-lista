@@ -182,6 +182,7 @@ This is the key hybrid-AI element. It goes on every AI answer and every parsed r
   }
   ```
   - **Bands:** score ≥ `high` → **Alta** (`.conf.high`); `cloud_cutoff` ≤ score < `high` → **Media** (`.conf.mid`); score < `cloud_cutoff` → **Baja** (`.conf.low`) and the item goes **to the cloud**. There is no separate `mid` key.
+  - **`high` and `cloud_cutoff` may be `null`** (number 0–1 or null). Null means there's no dev split yet: ML expects `guest_question` to be null on Tue Nov 24, and `rsvp` / `song` may be too. If either value is null, that task has **no bands**. `band()` returns none, chips render the neutral `.conf-none` "Sin umbral" pill instead of Alta / Media / Baja, and nothing is routed to the cloud for `low_confidence` on that task. `no_model` and `long_input` still apply. Never substitute a default.
   - `min_n` is ML's **eval** threshold (minimum rows to trust a cut-off). It is not used by the UI.
   - `analytics.min_sample` is the **panel's** "Pocos datos aún" minimum (§8). Keep the two separate.
   - Values above are placeholders until ML posts dev-tuned cut-offs (Tue Nov 24, 6 PM SV); nothing else changes.
@@ -268,8 +269,8 @@ This is the key hybrid-AI element. It goes on every AI answer and every parsed r
 | guest-qa-device, guest-qa-cloud, guest-qa-offline, guest-qa-idk, rsvp-form, rsvp-success, sign-in | 390 | `guest.py` |
 | couple-parse, headcount-desktop | 1440 | `couple.py` |
 | headcount-mobile | 390 | `couple.py` |
-| ai-loaded / ai-loading / ai-empty / ai-error / ai-offline / ai-few `-desktop` | 1440 | `ai.py` |
-| ai-loaded / ai-loading / ai-empty / ai-error / ai-offline / ai-few `-mobile` | 390 | `ai.py` |
+| ai-loaded / ai-loading / ai-empty / ai-error / ai-offline / ai-few / ai-no-threshold `-desktop` | 1440 | `ai.py` |
+| ai-loaded / ai-loading / ai-empty / ai-error / ai-offline / ai-few / ai-no-threshold `-mobile` | 390 | `ai.py` |
 | budget-quote-desktop, budget-board-desktop | 1440 | `budget.py` |
 | budget-quote-mobile, budget-board-mobile | 390 | `budget.py` |
 
@@ -291,7 +292,7 @@ Rebuild: `cd screens/src && python3 guest.py && python3 couple.py && python3 ai.
   - The badge legend sits above the rows.
 - **Reasons list** ("¿Por qué fue a la nube?"):
   - `no_model` → "El teléfono no tiene el asistente integrado"
-  - `low_confidence` → "Respuesta poco segura (menos de N%)", where N comes from `config.json → guest_question.cloud_cutoff`
+  - `low_confidence` → "Respuesta poco segura (bajo el umbral de cada función)". No percentage is shown, because each task has its own cut-off (and some may be null).
   - `long_input` → "Texto muy largo para el teléfono"
   - Each reason shows its count, its share and a thin bar. The raw reason key is shown for the team.
 - **Footer:** "Actualizado: 21 nov, 11:00 a. m. (hora SV) · 400 filas", with the model mix as a footnote ("Gemini Nano 300 · Gemini en la nube 100 · Solo uso real").
@@ -304,6 +305,7 @@ Rebuild: `cd screens/src && python3 guest.py && python3 couple.py && python3 ai.
   | Empty | ai-empty-* | izote, "Aún no hay preguntas", the explanation, a primary "Compartir enlace con invitados" button and a secondary "Pegar respuestas" button |
   | Error | ai-error-* | a `.banner-error` (`role="alert"`) reading "No pudimos actualizar. Te mostramos la última copia guardada, del 21 nov a las 9:00 a. m.", plus "Reintentar". The last snapshot sits below it under `.is-stale` (greyscale filter, so text contrast is unchanged), and the footer says "copia guardada". |
   | Offline | ai-offline-* | a `.banner-offline` (`role="status"`, wifi-off icon) reading "Sin conexión. Te mostramos la última copia guardada, del 21 nov a las 11:00 a. m. Se actualiza sola al volver la señal." The last snapshot sits below under `.is-stale`, and the footer says "copia guardada". There's no retry button, because it refreshes on reconnect. |
+  | Sin umbral | ai-no-threshold-* | the loaded example data with `guest_question` set to null and `rsvp` / `song` keeping their placeholders. A `.banner-info` (`role="status"`) reads "Preguntas de invitados aún no tiene umbral. Sus respuestas se cuentan igual, pero no las clasificamos en Alta, Media o Baja hasta que haya un umbral." Each feature row gets a threshold line: the null row shows the grey `.conf-none` "Sin umbral" chip plus "No clasificamos en Alta / Media / Baja". The others show "Umbral 60%" and "Alta desde 85%", read from `config.json`. The device/cloud bar stays, because the route is still logged. The example's `low_confidence` count (35) fits within rsvp + song's cloud answers (60), since a null task can't produce it. |
   | Pocos datos aún | ai-few-* | the "Últimas 24 h" window with 12 answers (guest_question 6 / 2, rsvp 3 / 1, song 0 / 0): tiles show "9 de 12", every feature row is hatched, and the reasons show counts only (2 / 1 / 0) |
 
 ## 9. Vendors and budget (feature 3)
