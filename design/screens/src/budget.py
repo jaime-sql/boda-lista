@@ -23,8 +23,6 @@ Q=next(q for q in QUOTES if q['id']=='vendor-02')
 QUOTE=f"{Q['vendor_name']}\n{Q['description']}\nTotal: {usd(Q['amount_usd'])} USD"
 # What the parser can honestly pull from that text: concepts, no per-line prices.
 # Budget has no config key until it's built: the parse screen uses a DESIGN-EXAMPLE band, not config.json.
-EXAMPLE_BAND={'high':0.85,'cloud_cutoff':0.60}
-def conf_example(pct): return chip(pct,band_from(pct,EXAMPLE_BAND),example=True)
 ITEMS=[('Cena','150 platos',95),('Cóctel','—',91),('Barra de café','—',90),('Menú infantil','Incluido',88)]
 CSS='''
 .wrapd{padding:var(--space-8) var(--space-10) var(--space-12)}

@@ -1,5 +1,5 @@
 from common import *
-CONF=conf
+CONF=lambda pct,task: conf_example(pct)  # config.json is null until ML's PR; mock rows use design-example bands
 D_CSS='''
 .wrapd{padding:var(--space-8) var(--space-10) var(--space-12)}
 .ph{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--space-6);margin-bottom:var(--space-6)}
@@ -44,7 +44,7 @@ rows=''.join([
 ])
 body=topnav('Respuestas')+f'''<main class="wrapd">
 <div class="ph"><div><p class="eyebrow">Respuestas de WhatsApp</p><h1 class="display">Pega los mensajes y revisa</h1><p>Leemos cada mensaje en tu dispositivo. Solo los dudosos van a la nube, sin números de teléfono.</p></div>
-<div class="row gap-2"><span class="badge badge-device">{I("phone",18)}En tu teléfono · 6</span><span class="badge badge-cloud">{I("cloud",18)}En la nube · 2</span><span class="badge badge-review">{I("flag",16)}Revisar · 2</span></div></div>
+<div class="row wrap gap-2"><span class="mock-chip">Confianza de ejemplo · solo en el diseño</span><span class="badge badge-device">{I("phone",18)}En tu teléfono · 6</span><span class="badge badge-cloud">{I("cloud",18)}En la nube · 2</span><span class="badge badge-review">{I("flag",16)}Revisar · 2</span></div></div>
 <div class="pgrid">
   <section class="card">
     <div class="cardh"><h2>1. Pega los mensajes</h2></div>

@@ -8,6 +8,22 @@ DEV=sum(f[2] for f in FEAT); CLD=sum(f[3] for f in FEAT); N=DEV+CLD
 DEV24=sum(f[2] for f in FEAT24); CLD24=sum(f[3] for f in FEAT24); N24=DEV24+CLD24
 REASONS=[('no_model','El teléfono no tiene el asistente integrado',50),('low_confidence','Respuesta poco segura (bajo el umbral de cada función)',35),('long_input','Texto muy largo para el teléfono',15)]
 assert sum(r[2] for r in REASONS)==CLD and N>=MIN and N24<MIN
+LOADED=dict(FEAT=FEAT,REASONS=REASONS,DEV=DEV,CLD=CLD,N=N)
+# No-threshold EXAMPLE (Captain's rule): guest_question has null high/cloud_cutoff, so every answer goes to the cloud
+# (reason no_threshold) except when the phone is offline: Nano answers, labelled "Respuesta poco segura",
+# logged route=device reason=offline_no_threshold. rsvp/song use DESIGN-EXAMPLE cut-offs (config.json is null for all three until ML's PR).
+NT_OFFLINE=8
+NT_FEAT=[('guest_question','Preguntas de invitados',NT_OFFLINE,192),('rsvp','Confirmaciones',90,30),('song','Canciones',50,30)]
+NT_DEV=sum(f[2] for f in NT_FEAT); NT_CLD=sum(f[3] for f in NT_FEAT); NT_N=NT_DEV+NT_CLD
+NT_REASONS=[('no_threshold','Sin umbral aún',192),('no_model','El teléfono no tiene el asistente integrado',30),('low_confidence','Respuesta poco segura (bajo el umbral de cada función)',20),('long_input','Texto muy largo para el teléfono',10)]
+NOTHR=dict(FEAT=NT_FEAT,REASONS=NT_REASONS,DEV=NT_DEV,CLD=NT_CLD,N=NT_N)
+EXAMPLE_THR={'rsvp':{'high':0.85,'cloud_cutoff':0.60},'song':{'high':0.85,'cloud_cutoff':0.60}}  # design example only
+assert NT_N==N and sum(r[2] for r in NT_REASONS)==NT_CLD
+assert dict((r[0],r[2]) for r in NT_REASONS)['no_threshold']==NT_FEAT[0][3]  # all guest_question cloud answers are no_threshold
+assert sum(r[2] for r in NT_REASONS if r[0]!='no_threshold')==sum(f[3] for f in NT_FEAT[1:])
+assert not has_threshold(cfg('guest_question'))
+def use(ds):
+    globals().update(ds)
 
 CSS='''
 .wrapd{padding:var(--space-8) var(--space-10) var(--space-12)}
@@ -43,6 +59,7 @@ CSS='''
 .emp h2{font-family:var(--font-display);font-variation-settings:var(--font-display-variation);font-size:var(--text-2xl);font-weight:600}
 .emp p{max-width:520px;color:var(--color-text-muted)}
 .thr{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:8px}
+.thr code{font-family:var(--font-body);font-weight:600}
 .thr>span:last-child{font-size:var(--text-sm);color:var(--color-text-muted)}
 .few-note{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:var(--radius-pill);background:var(--color-neutral-bg);font-size:var(--text-sm);font-weight:600}
 '''
@@ -81,8 +98,7 @@ def tiles(state):
 <div class="card tile"><span class="k">{I("clock",18)}Rapidez (mediana)</span><div class="speed"><div><span class="badge badge-device">En tu teléfono</span><span class="v display" style="font-weight:600">0,4 s</span></div><div><span class="badge badge-cloud">En la nube</span><span class="v display" style="font-weight:600">1,8 s</span></div></div><span class="s">p95: 0,9 s en el teléfono · 3,6 s en la nube</span></div></div>'''
 
 # No-threshold example: guest_question has no dev split yet (null), rsvp/song keep config placeholders.
-THR={k:dict(cfg(k)) for k in ('guest_question','rsvp','song')}
-THR['guest_question'].update(high=None,cloud_cutoff=None)
+THR={'guest_question':cfg('guest_question'),**EXAMPLE_THR}
 def featbars(state):
     rows=''
     data=FEAT24 if state=='few' else FEAT
@@ -97,8 +113,8 @@ def featbars(state):
         thr=''
         if state=='nothr':
             b=THR[k]
-            thr=(f'<div class="thr">{NO_THRESHOLD}<span>No clasificamos en Alta / Media / Baja</span></div>' if not has_threshold(b)
-                 else f'<div class="thr"><span class="conf-none" style="background:var(--color-surface-alt)">Umbral {round(b["cloud_cutoff"]*100)}%</span><span>Alta desde {round(b["high"]*100)}%</span></div>')
+            thr=(f'<div class="thr">{NO_THRESHOLD}<span>No clasificamos en Alta / Media / Baja</span></div><div class="thr"><span>Las {d} del teléfono fueron sin conexión y se marcan «Respuesta poco segura» <code>offline_no_threshold</code></span></div>' if not has_threshold(b)
+                 else f'<div class="thr"><span class="conf-none" style="background:var(--color-surface-alt)" title="Umbral de ejemplo de diseño">Umbral {round(b["cloud_cutoff"]*100)}% (ejemplo)</span><span>Alta desde {round(b["high"]*100)}%</span></div>')
         rows+=f'<div class="frow"><div class="lab"><b>{name}</b><span>{d} en tu teléfono · {c} en la nube</span>{thr}</div>{bar}<span class="n">{n}</span></div>'
     leg=f'<div class="legend2">{DEVICE}{CLOUD}</div>'
     return f'<section class="card"><div class="cardh"><h2>Por función</h2><span class="sm muted">Total de respuestas a la derecha</span></div>{leg}<div style="margin-top:var(--space-3)">{rows}</div></section>'
@@ -109,7 +125,7 @@ def reasons(state):
     elif state=='few':
         li=f'<li><span>El teléfono no tiene el asistente integrado <code>no_model</code></span><b>2</b></li><li><span>Respuesta poco segura <code>low_confidence</code></span><b>1</b></li><li><span>Texto muy largo <code>long_input</code></span><b>0</b></li><li style="display:block"><span class="few-note">{I("info",16)}Pocos datos aún: solo contamos, sin porcentajes</span></li>'
     else:
-        li=''.join(f'<li><span>{t} <code>{k}</code></span><b>{v} · {v}%</b><span class="bar"><i style="width:{v}%"></i></span></li>' for k,t,v in REASONS)
+        li=''.join(f'<li><span>{t} <code>{k}</code></span><b>{v} · {round(v*100/CLD)}%</b><span class="bar"><i style="width:{v*100/CLD:.1f}%"></i></span></li>' for k,t,v in REASONS)
     return f'<section class="card"><div class="cardh"><h2>¿Por qué fue a la nube?</h2>{CLOUD}</div><ul class="rs">{li}</ul></section>'
 
 def foot(state):
@@ -126,13 +142,14 @@ def body(state,mobile):
         if state=='error':
             pre=f'<div class="banner banner-error" role="alert" style="margin-bottom:var(--space-4)">{I("info",22)}<div style="flex:1"><b>No pudimos actualizar.</b> Te mostramos la última copia guardada, del 21 nov a las 9:00 a. m.</div><button class="btn btn-secondary" style="background:var(--color-surface)">{I("refresh")}Reintentar</button></div>'
         if state=='nothr':
-            pre=f'<div class="banner banner-info" role="status" style="margin-bottom:var(--space-4)">{I("info",22)}<div style="flex:1"><b>Preguntas de invitados aún no tiene umbral.</b> Sus respuestas se cuentan igual, pero no las clasificamos en Alta, Media o Baja hasta que haya un umbral.</div></div>'
+            pre=f'<div class="banner banner-info" role="status" style="margin-bottom:var(--space-4)">{I("info",22)}<div style="flex:1"><b>Preguntas de invitados aún no tiene umbral.</b> Mientras tanto, sus respuestas van a la nube. Sin conexión responde el teléfono y las marca como «Respuesta poco segura». No las clasificamos en Alta, Media o Baja hasta que haya un umbral.</div></div>'
         if state=='offline':
             pre=f'<div class="banner banner-offline" role="status" style="margin-bottom:var(--space-4)">{I("wifioff",22)}<div style="flex:1"><b>Sin conexión.</b> Te mostramos la última copia guardada, del 21 nov a las 11:00 a. m. Se actualiza sola al volver la señal.</div></div>'
         snap=state in ('error','offline')
         ds='loaded' if snap else state
-        if state=='nothr': ds='loaded'
+        if state=='nothr': ds='loaded'; use(NOTHR)
         inner=pre+f'<div class="{"is-stale" if snap else ""}">'+tiles(ds)+f'<div class="grid2">{featbars('nothr' if state=='nothr' else ds)}{reasons(ds)}</div>{foot(state)}</div>'
+    use(LOADED)
     return header(mobile,state)+inner
 
 STATES=['loaded','loading','empty','error','offline','few','nothr']

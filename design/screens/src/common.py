@@ -116,11 +116,14 @@ def band_from(pct,b):
 def band(pct,task):
     return band_from(pct,cfg(task))
 BAND_LABEL={'high':'Alta','mid':'Media','low':'Baja'}
-NO_THRESHOLD=f'<span class="conf-none">Sin umbral</span>'
+NO_THRESHOLD=f'<span class="conf-none">Sin umbral aún</span>'
 def chip(pct,c,example=False):
     if c is None: return NO_THRESHOLD
     t=' title="Banda de ejemplo de diseño"' if example else ''
     return f'<span class="conf {c}" data-confidence="{pct/100:.2f}"{t}><i><b></b><b></b><b></b></i>{BAND_LABEL[c]} {pct}%</span>'
+# Design-example bands for mock screens while config.json is null (Captain: null stays null until ML's PR). Labelled as example.
+EXAMPLE_BAND={'high':0.85,'cloud_cutoff':0.60}
+def conf_example(pct): return chip(pct,band_from(pct,EXAMPLE_BAND),example=True)
 def conf(pct,task):
     return chip(pct,band(pct,task))
 
