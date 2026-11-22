@@ -1,0 +1,45 @@
+{
+  "aliases": {
+    "meal_needs": "meal_restrictions",
+    "mealRestrictions": "meal_restrictions",
+    "partySize": "party_size",
+    "kidsCount": "kids_count",
+    "needsRide": "needs_ride",
+    "language": "lang"
+  },
+  "files": {
+    "rsvp_replies.jsonl": {
+      "expected_split": "test",
+      "expected_task": "rsvp"
+    },
+    "song_requests.jsonl": {
+      "expected_split": "test",
+      "expected_task": "song"
+    },
+    "rsvp_dev_generated.jsonl": {
+      "expected_split": "dev",
+      "expected_task": "rsvp"
+    },
+    "rsvp_stress.jsonl": {
+      "expected_split": "stress",
+      "expected_task": "rsvp"
+    },
+    "song_dev_generated.jsonl": {
+      "expected_split": "dev",
+      "expected_task": "song"
+    },
+    "guest_questions.jsonl": {
+      "expected_task": "guest_question",
+      "out_of_scope": true
+    },
+    "wedding_info.json": {
+      "expected_task": "wedding_info",
+      "out_of_scope": true
+    }
+  },
+  "test_label_filenames": [
+    "rsvp_replies.jsonl",
+    "song_requests.jsonl",
+    "rsvp_stress.jsonl"
+  ]
+}

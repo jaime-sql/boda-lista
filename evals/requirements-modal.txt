@@ -1,0 +1,3 @@
+# Only for `modal run evals/modal_gemma.py` on a laptop with the Modal CLI.
+# The GPU image pins its own torch/transformers inside evals/modal_gemma.py.
+modal>=1.0.0

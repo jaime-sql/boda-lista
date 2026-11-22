@@ -1,0 +1,6 @@
+__pycache__/
+.pytest_cache/
+*.pyc
+results/**
+!results/.gitkeep
+nano_runner/firebase-config.json
