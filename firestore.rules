@@ -1,0 +1,58 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Guests may append analytics rows. They cannot read them.
+    // A signed-in organizer (Google sign-in on /admin) can read.
+    // The analytics schema has no uid field, so ownership is the signed-in session.
+    match /prompt_logs/{logId} {
+      allow create: if isValidPromptLog(request.resource.data);
+      allow read: if request.auth != null;
+      allow update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+function isValidPromptLog(data) {
+  return data.keys().hasOnly([
+      'ts',
+      'feature',
+      'route',
+      'fallback_reason',
+      'latency_ms',
+      'input_chars',
+      'output_chars',
+      'model',
+      'confidence',
+      'session_id'
+    ])
+    && data.ts is string
+    && data.ts.size() >= 20
+    && data.ts.size() <= 40
+    && data.feature in ['guest_question', 'rsvp', 'song']
+    && data.route in ['device', 'cloud']
+    && (
+      data.fallback_reason == null
+      || data.fallback_reason in ['no_model', 'low_confidence', 'long_input', 'no_threshold', 'offline_no_threshold']
+    )
+    && data.latency_ms is int
+    && data.latency_ms >= 0
+    && data.latency_ms <= 600000
+    && data.input_chars is int
+    && data.input_chars >= 0
+    && data.input_chars <= 200000
+    && data.output_chars is int
+    && data.output_chars >= 0
+    && data.output_chars <= 200000
+    && data.model is string
+    && data.model.size() > 0
+    && data.model.size() <= 80
+    && (data.confidence == null || data.confidence is number)
+    && data.session_id is string
+    && data.session_id.size() >= 8
+    && data.session_id.size() <= 80;
+}

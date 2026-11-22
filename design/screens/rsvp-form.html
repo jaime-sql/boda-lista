@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Confirmar asistencia · Boda Lista</title>
+<link rel="stylesheet" href="../tokens/tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>body{width:390px} 
+.g-hero{margin:0 var(--space-4);padding:var(--space-5);border-radius:var(--radius-xl);background:var(--color-surface-alt);position:relative;overflow:hidden}
+.g-hero-art{position:absolute;right:16px;top:14px}
+.g-names{font-size:2.5rem;margin:var(--space-1) 0 var(--space-2)}
+.g-names i{color:var(--color-primary);font-weight:400}
+.g-date{font-size:var(--text-sm);margin-bottom:2px}
+.g-hero-actions{margin-top:var(--space-4)}
+.g-hero-actions .btn{padding:0 var(--space-4);font-size:var(--text-sm);flex:1}
+.g-main{padding:var(--space-5) var(--space-4) var(--space-2);display:flex;flex-direction:column;gap:var(--space-3)}
+.g-quick{padding:var(--space-3) var(--space-4) 0}
+.g-quick h2{font-size:var(--text-sm);font-weight:600;color:var(--color-text-muted);margin-bottom:var(--space-2)}
+.g-composer{display:flex;gap:var(--space-2);padding:var(--space-4)}
+.g-composer .input{border-radius:var(--radius-pill);padding:0 var(--space-5)}
+.g-composer .btn-icon{background:var(--color-primary);color:var(--color-on-primary)}
+.sched{list-style:none;margin-top:var(--space-2)}
+.sched li{display:flex;gap:var(--space-3);padding:6px 0;border-top:1px dashed var(--color-border)}
+.sched b{min-width:84px;font-variant-numeric:tabular-nums}
+
+.r-head{padding:var(--space-4) var(--space-4) 0}
+.r-head h1{font-size:var(--text-3xl);margin:var(--space-1) 0 var(--space-2)}
+.deadline{display:inline-flex;align-items:center;gap:8px;margin-top:var(--space-3);padding:8px 14px;border-radius:var(--radius-pill);background:var(--color-warning-bg);color:var(--color-warning-fg);font-weight:700}
+.r-sec{margin:var(--space-4) var(--space-4) 0;padding:var(--space-5)}
+.r-sec h2{font-family:var(--font-display);font-variation-settings:var(--font-display-variation);font-size:var(--text-xl);font-weight:600;margin-bottom:var(--space-1)}
+.r-sec > p.hint{margin-bottom:var(--space-4)}
+.member{display:flex;align-items:center;justify-content:space-between;min-height:64px;border-top:1px solid var(--color-border);gap:var(--space-3)}
+.member:first-of-type{border-top:0}
+.member small{display:block;font-size:var(--text-sm);color:var(--color-text-muted)}
+.sum{display:flex;gap:var(--space-2);margin-top:var(--space-3);flex-wrap:wrap}
+.song{display:grid;grid-template-columns:32px 1fr;gap:var(--space-2) var(--space-3);align-items:center;padding:var(--space-3) 0;border-top:1px solid var(--color-border)}
+.song:first-of-type{border-top:0}
+.song .n{font-family:var(--font-display);font-size:var(--text-xl);color:var(--color-primary);grid-row:span 2}
+.r-submit{padding:var(--space-6) var(--space-4) var(--space-4)}
+</style>
+</head><body>
+<div class="weave"></div>
+<header class="appbar"><div class="mono">A&amp;D</div><div class="seg" role="group" aria-label="Idioma"><span class="on">ES</span><span>EN</span></div></header>
+<section class="r-head">
+  <p class="eyebrow">Confirma tu asistencia</p>
+  <h1 class="display">Hola, familia Rivas</h1>
+  <p>Su invitación es para <b>4 personas</b>. Una sola respuesta por toda la familia.</p>
+  <p class="deadline"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Confirma antes del 1 de diciembre</p>
+</section>
+<section class="card r-sec">
+  <h2>¿Nos acompañan?</h2><p class="hint">Sábado 12 de diciembre, 4:00 p. m.</p>
+  <div class="stack gap-2" role="radiogroup">
+    <div class="choice on" role="radio" aria-checked="true"><span class="dot"></span>Sí, ahí estaremos</div>
+    <div class="choice" role="radio"><span class="dot"></span>Tal vez, les aviso</div>
+    <div class="choice" role="radio"><span class="dot"></span>No podremos ir</div>
+  </div>
+</section>
+<section class="card r-sec">
+  <h2>¿Quiénes vienen?</h2><p class="hint">Toca para marcar quién sí llega.</p>
+  <div class="member"><div>Roberto Rivas</div><span class="switch on" role="switch" aria-checked="true"></span></div>
+  <div class="member"><div>Carmen de Rivas</div><span class="switch on" role="switch" aria-checked="true"></span></div>
+  <div class="member"><div>Sofía Rivas<small>Niña · 7 años</small></div><span class="switch on" role="switch" aria-checked="true"></span></div>
+  <div class="member"><div>Mateo Rivas<small>Niño · 3 años</small></div><span class="switch" role="switch" aria-checked="false"></span></div>
+  <div class="sum"><span class="badge badge-yes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 14.2A5 5 0 0 1 21.5 19"/></svg>3 personas</span><span class="badge badge-pending">1 niña o niño</span></div>
+</section>
+<section class="card r-sec">
+  <h2>¿Alguna comida especial?</h2><p class="hint">Marca todas las que apliquen.</p>
+  <div class="row wrap gap-2">
+    <button class="chip on" aria-pressed="true">Vegetariano</button><button class="chip">Vegano</button><button class="chip">Sin gluten</button><button class="chip on" aria-pressed="true">Menú infantil</button><button class="chip on" aria-pressed="true">Alergia</button>
+  </div>
+  <div class="field" style="margin-top:var(--space-4)"><label class="label">¿A qué tienen alergia?</label><div class="input">Maní (Carmen)</div></div>
+</section>
+<section class="card r-sec">
+  <div class="row between gap-3"><div><h2>¿Necesitan transporte?</h2><p class="hint">Bus desde Metrocentro, San Salvador, 2:45 p. m.</p></div><span class="switch on" role="switch" aria-checked="true"></span></div>
+</section>
+<section class="card r-sec">
+  <h2><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5.5l11-2V16"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg> Pide canciones para la fiesta</h2><p class="hint">Hasta 3. El DJ las ordena de lentas a bailables.</p>
+  <div class="song"><span class="n">1</span><div class="input">Bésame mucho</div><div class="input">Luis Miguel</div></div>
+  <div class="song"><span class="n">2</span><div class="input">Vivir mi vida</div><div class="input placeholder is-focus">Artista</div></div>
+  <div class="song"><span class="n">3</span><div class="input placeholder">Título de la canción</div><div class="input placeholder">Artista</div></div>
+</section>
+<div class="r-submit stack gap-3"><button class="btn btn-primary btn-lg btn-block">Enviar respuesta</button><p class="hint" style="text-align:center">Pueden cambiarla hasta el 1 de diciembre.</p></div>
+<nav class="tabbar"><a class=""><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.7M12 17h.01"/></svg>Preguntar</a><a class="on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10C19.5 15.4 12 20 12 20z"/></svg>Confirmar</a><a class=""><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg>Detalles</a></nav>
+</body></html>
