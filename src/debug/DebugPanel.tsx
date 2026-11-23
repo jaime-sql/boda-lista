@@ -100,6 +100,12 @@ export function DebugPanel() {
             <dd>{lastLog.route}</dd>
             <dt>fallback_reason</dt>
             <dd>{lastLog.fallback_reason === null ? 'null' : lastLog.fallback_reason}</dd>
+            {typeof lastLog.edited_by_guest === 'boolean' ? (
+              <>
+                <dt>edited_by_guest</dt>
+                <dd>{lastLog.edited_by_guest ? 'true' : 'false'}</dd>
+              </>
+            ) : null}
             <dt>latency_ms</dt>
             <dd>{lastLog.latency_ms}</dd>
             <dt>input_chars</dt>

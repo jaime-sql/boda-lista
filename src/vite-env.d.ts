@@ -13,6 +13,7 @@ interface ImportMetaEnv {
   readonly VITE_USE_EMULATORS?: string;
   readonly VITE_GEMINI_CLOUD_MODEL?: string;
   readonly VITE_ENABLE_DEBUG?: string;
+  readonly VITE_E2E?: string;
 }
 
 interface ImportMeta {

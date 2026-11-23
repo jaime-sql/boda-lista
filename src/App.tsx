@@ -5,6 +5,7 @@ import { ErrorState } from './components/ScreenState';
 import { ToastProvider } from './components/ToastProvider';
 import { AdminPage } from './pages/AdminPage';
 import { GuestPage } from './pages/GuestPage';
+import { RsvpPage } from './pages/RsvpPage';
 
 type BoundaryProps = { children: ReactNode };
 type BoundaryState = { failed: boolean };
@@ -38,6 +39,7 @@ export default function App() {
           <ScreenBoundary>
             <Routes>
               <Route path="/" element={<GuestPage />} />
+              <Route path="/rsvp" element={<RsvpPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

@@ -21,12 +21,14 @@ export interface PromptLog {
   model: string;
   confidence: number | null;
   session_id: string;
+  edited_by_guest?: boolean;
 }
 
 export interface AskContext {
   feature: Feature;
   system?: string;
   confidence?: number | null;
+  forceCloud?: boolean;
 }
 
 export interface AskResult {

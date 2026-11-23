@@ -1,4 +1,5 @@
 import * as Form from '@radix-ui/react-form';
+import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { ask } from '../ai/hybrid';
@@ -150,6 +151,7 @@ function isUnknownAnswer(text: string): boolean {
 
 export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
   const online = useOnline();
+  const navigate = useNavigate();
   const publish = useToast();
   const [lang, setLang] = useState<UiLang>('es');
   const copy = COPY[lang];
@@ -426,7 +428,7 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
           <Icon name="question" size={24} />
           {copy.askTab}
         </button>
-        <button type="button" onClick={() => publish({ title: copy.later })}>
+        <button type="button" onClick={() => navigate('/rsvp')}>
           <Icon name="heart" size={24} />
           {copy.confirmTab}
         </button>
