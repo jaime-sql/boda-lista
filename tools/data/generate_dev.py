@@ -23,11 +23,15 @@ from pathlib import Path
 from validate import (
     LEAK_THRESHOLD,
     UNKNOWN_ANSWER,
+    UNKNOWN_ANSWER_EN,
     difflib_similarity,
     length_bound,
     normalize_text,
     similarity,
 )
+
+POLARITY = {"yes", "no"}
+TIME_FACT = re.compile(r"^\d{2}:\d{2}$")
 
 SEED = 20261124
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -1107,16 +1111,16 @@ def question_facts(info: dict) -> list[dict]:
             "q_en": "is a formal guayabera acceptable?",
             "a_es": "Sí, se puede ir con guayabera formal.",
             "a_en": "Yes, a formal guayabera is welcome.",
-            "facts_es": ["Sí", "guayabera formal"],
-            "facts_en": ["Yes", "guayabera"],
+            "facts_es": ["yes", "guayabera formal"],
+            "facts_en": ["yes", "guayabera"],
         },
         {
             "q_es": "¿está permitido el blanco, el ivory o el crema?",
             "q_en": "are white, ivory, or cream allowed?",
             "a_es": "No, no se puede usar blanco, ivory ni crema.",
             "a_en": "No, white, ivory, and cream are not allowed.",
-            "facts_es": ["No", "blanco", "ivory", "crema"],
-            "facts_en": ["No", "white", "ivory", "cream"],
+            "facts_es": ["no", "blanco", "ivory", "crema"],
+            "facts_en": ["no", "white", "ivory", "cream"],
         },
         {
             "q_es": "¿a qué hora es el pastel y en qué salón?",
@@ -1179,8 +1183,8 @@ def question_facts(info: dict) -> list[dict]:
             "q_en": "is there valet, where does the shuttle leave from, and how often does it run?",
             "a_es": "Sí hay valet gratuito desde las 15:00, y el shuttle sale del estacionamiento norte del Centro Comercial El Encuentro cada 20 minutos.",
             "a_en": "Yes, free valet starts at 15:00, and the shuttle leaves from the north lot of Centro Comercial El Encuentro every 20 minutes.",
-            "facts_es": ["Sí", "15:00", "estacionamiento norte", "Centro Comercial El Encuentro", "20 minutos"],
-            "facts_en": ["Yes", "15:00", "Centro Comercial El Encuentro", "20 minutes"],
+            "facts_es": ["yes", "15:00", "estacionamiento norte", "Centro Comercial El Encuentro", "20 minutos"],
+            "facts_en": ["yes", "15:00", "Centro Comercial El Encuentro", "20 minutes"],
         },
         {
             "q_es": "¿a qué hora sale el último shuttle de regreso?",
@@ -1195,8 +1199,8 @@ def question_facts(info: dict) -> list[dict]:
             "q_en": "can we park on the highway shoulder?",
             "a_es": "No, no se puede estacionar en el hombro de la carretera.",
             "a_en": "No, you can't park on the highway shoulder.",
-            "facts_es": ["No", "hombro de la carretera"],
-            "facts_en": ["No", "highway shoulder"],
+            "facts_es": ["no", "hombro de la carretera"],
+            "facts_en": ["no", "highway shoulder"],
         },
         {
             "q_es": "¿qué prefieren de regalo y hay mesa de regalos o se puede aportar al viaje?",
@@ -1277,6 +1281,64 @@ OOS_STEMS = [
 ]
 
 
+def _surface_polarity(answer: str, lang: str) -> str | None:
+    if lang == "es":
+        if answer.startswith("Sí"):
+            return "yes"
+        if answer.startswith("No"):
+            return "no"
+    if lang == "en":
+        if answer.startswith("Yes"):
+            return "yes"
+        if answer.startswith("No"):
+            return "no"
+    return None
+
+
+def _place_names(info: dict) -> set[str]:
+    venue = info["venue"]
+    names = {
+        venue["name"],
+        venue["address"],
+        venue["city"],
+        venue["country"],
+        venue.get("ceremony_area", ""),
+        venue.get("reception_area", ""),
+    }
+    for item in info["schedule"]:
+        if item.get("place"):
+            names.add(item["place"])
+    names.discard("")
+    return names
+
+
+def _check_gold_facts(facts: list[str], answer: str, lang: str, info: dict) -> None:
+    """Times are HH:MM, places match the sheet, and yes/no is the token yes or no."""
+    blob = json.dumps(info, ensure_ascii=False)
+    places = _place_names(info)
+    folded = {name.casefold(): name for name in places}
+    poles: list[str] = []
+    for bit in facts:
+        if bit in {"Sí", "Si", "Yes", "No"}:
+            raise SystemExit(f"yes/no fact must be 'yes' or 'no', got {bit!r}")
+        if bit in POLARITY:
+            poles.append(bit)
+            continue
+        if TIME_FACT.fullmatch(bit):
+            if bit not in blob:
+                raise SystemExit(f"time fact {bit!r} is not in wedding_info.json")
+            continue
+        canonical = folded.get(bit.casefold())
+        if canonical is not None and bit != canonical:
+            raise SystemExit(f"place fact {bit!r} must be copied as {canonical!r}")
+        if bit not in answer:
+            raise SystemExit(f"{lang} answer missing {bit!r}: {answer!r}")
+    if len(poles) > 1:
+        raise SystemExit(f"more than one yes/no fact in {facts!r}")
+    if poles and _surface_polarity(answer, lang) != poles[0]:
+        raise SystemExit(f"{lang} polarity does not match {poles[0]!r}: {answer!r}")
+
+
 def build_questions(info: dict, sheet: str, norms: list[str], max_test_len: int) -> list[dict]:
     for snippet in (
         info["venue"]["name"],
@@ -1301,11 +1363,9 @@ def build_questions(info: dict, sheet: str, norms: list[str], max_test_len: int)
     for fact in facts:
         for lang, answer_key, fact_key in (("es", "a_es", "facts_es"), ("en", "a_en", "facts_en")):
             answer = fact[answer_key]
-            if not answer.endswith(".") or ". " in answer or " / " in answer or UNKNOWN_ANSWER in answer:
+            if not answer.endswith(".") or ". " in answer or " / " in answer or UNKNOWN_ANSWER in answer or UNKNOWN_ANSWER_EN in answer:
                 raise SystemExit(f"gold answer is not one scoped sentence: {answer!r}")
-            for bit in fact[fact_key]:
-                if bit not in answer:
-                    raise SystemExit(f"{lang} answer missing {bit!r}: {answer!r}")
+            _check_gold_facts(fact[fact_key], answer, lang, info)
         for frame in FRAMES_ES:
             text = ensure_long(frame.format(q=fact["q_es"]), "es", max_test_len)
             rows.append(_qa(text, "es", fact["a_es"], False, fact["facts_es"]))
@@ -1315,15 +1375,17 @@ def build_questions(info: dict, sheet: str, norms: list[str], max_test_len: int)
         raise SystemExit(f"expected 40 out-of-scope stems, got {len(OOS_STEMS)}")
     for lang, stem in OOS_STEMS:
         text = ensure_long(OOS_FRAME[lang].format(q=stem), lang, max_test_len)
-        rows.append(_qa(text, lang, UNKNOWN_ANSWER, True))
+        refusal = UNKNOWN_ANSWER_EN if lang == "en" else UNKNOWN_ANSWER
+        rows.append(_qa(text, lang, refusal, True))
     if len(rows) != 120:
         raise SystemExit(f"expected 120 questions, got {len(rows)}")
     for row in rows:
         if row["out_of_scope"]:
-            if row["answer"] != UNKNOWN_ANSWER:
-                raise SystemExit("out-of-scope answer drifted")
-        elif row["answer"] == UNKNOWN_ANSWER or UNKNOWN_ANSWER in row["answer"]:
-            raise SystemExit("in-scope answer used the out-of-scope phrase")
+            expected = UNKNOWN_ANSWER_EN if row["lang"] == "en" else UNKNOWN_ANSWER
+            if row["answer"] != expected:
+                raise SystemExit(f"out-of-scope answer drifted for {row['lang']}: {row['answer']!r}")
+        elif UNKNOWN_ANSWER in row["answer"] or UNKNOWN_ANSWER_EN in row["answer"]:
+            raise SystemExit("in-scope answer used an out-of-scope phrase")
         if not is_length_safe(row["text"], max_test_len):
             raise SystemExit("question not length-safe")
     _reject_leaks(rows, norms, "questions")

@@ -31,6 +31,8 @@ warnings: list[str] = []
 
 SCHEMA_PATH = DATA / "schema.json"
 UNKNOWN_ANSWER = "No tengo esa información, pregúntale a los novios"
+UNKNOWN_ANSWER_EN = "I don't have that information, ask the couple"
+UNKNOWN_BY_LANG = {"es": UNKNOWN_ANSWER, "en": UNKNOWN_ANSWER_EN}
 LEAK_REPORT_PATH = DATA / "leak_report.json"
 LEAK_THRESHOLD = 90
 
@@ -252,6 +254,10 @@ def _schema_errors(instance, schema, root: dict, path: str) -> list[str]:
             found.extend(_schema_errors(instance, schema["then"], root, path))
         if if_errs and "else" in schema:
             found.extend(_schema_errors(instance, schema["else"], root, path))
+
+    if "allOf" in schema and isinstance(schema["allOf"], list):
+        for sub in schema["allOf"]:
+            found.extend(_schema_errors(instance, sub, root, path))
 
     return found
 
@@ -642,14 +648,16 @@ def validate_questions() -> list[dict]:
 
 
 def _check_guest_answer(row: dict, where: str) -> None:
+    """Out-of-scope gold must be the refusal for the row's language."""
+    expected = UNKNOWN_BY_LANG.get(row.get("lang"))
     if row.get("out_of_scope") is True:
-        if row.get("answer") != UNKNOWN_ANSWER:
+        if expected is None or row.get("answer") != expected:
             err(
-                f"{where}: out-of-scope answer must be exactly "
-                f"{UNKNOWN_ANSWER!r}, got {row.get('answer')!r}"
+                f"{where}: out-of-scope answer for lang {row.get('lang')!r} must be exactly "
+                f"{expected!r}, got {row.get('answer')!r}"
             )
-    elif row.get("answer") == UNKNOWN_ANSWER:
-        err(f"{where}: in-scope row uses the out-of-scope phrase")
+    elif row.get("answer") in UNKNOWN_BY_LANG.values():
+        err(f"{where}: in-scope row uses an out-of-scope phrase")
 
 
 def validate_generated(test_rows_by_task: dict[str, list[dict]], test_ids: set[str], households: set[str]) -> None:
