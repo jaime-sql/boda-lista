@@ -46,6 +46,12 @@ test('online reply confirms and reaches success', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/rsvp?code=FAM1');
   await expect(page.getByRole('heading', { name: 'Tu invitación' })).toBeVisible();
+  await expect(
+    page.getByText(
+      'Escribe tu respuesta como se la mandarías a los novios: quiénes van y si alguien tiene alguna restricción.',
+    ),
+  ).toBeVisible();
+  await expect(page.getByLabel('Código de invitación')).toHaveAttribute('placeholder', 'Ej. GARCIA-24');
   await page.screenshot({ path: 'docs/screenshots/rsvp-paste-mobile.png', fullPage: true });
   await page.getByLabel('Respuesta').fill('Si, vamos tres. Uno vegetariano.');
   await page.getByRole('button', { name: 'Leer respuesta' }).click();
