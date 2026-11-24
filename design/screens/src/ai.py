@@ -9,21 +9,24 @@ DEV=sum(f[2] for f in FEAT); CLD=sum(f[3] for f in FEAT); N=DEV+CLD
 DEV24=sum(f[2] for f in FEAT24); CLD24=sum(f[3] for f in FEAT24); N24=DEV24+CLD24
 SHEET_N=60; SHEET24=4
 REASONS=[('no_model','El teléfono no tiene el asistente integrado',50),('low_confidence','Respuesta poco segura (bajo el umbral de cada función)',35),('long_input','Texto muy largo para el teléfono',15)]
-# Optional lang split (es / en / sin idioma) for fairness check (spec v1.2, metric 6).
-# Rows without lang count in totals and show as "sin idioma" in the split; cells < 20 show raw count + "Pocos datos aún".
+# Optional lang split (by_lang keys es / en / unknown) for fairness check (spec v1.2, metric 6).
+# Each key: ai_rows, device_share, latency_p50_ms, latency_p95_ms (AI rows only) and sheet_answers (own field, never mixed in).
+# No refusals: the prompt log has no refusal flag. Cells < 20 show raw count + "Pocos datos aún".
+# Tuple: (key, label, device, cloud, sheet, p50, p95). ai_rows = device+cloud.
 LANG_LOADED=[
-    ('es','Español (es)',216,64,14,'5%','0,4 s','1,7 s'),
-    ('en','Inglés (en)',76,32,8,'7%','0,4 s','1,9 s'),
-    ('none','sin idioma',8,4,1,None,None,None),
+    ('es','Español (es)',216,64,40,'0,5 s','2,4 s'),
+    ('en','Inglés (en)',76,32,16,'0,6 s','2,8 s'),
+    ('unknown','Sin idioma (unknown)',8,4,4,None,None),
 ]
 LANG_24=[
-    ('es','Español (es)',6,2,0,None,None,None),
-    ('en','Inglés (en)',3,1,1,None,None,None),
-    ('none','sin idioma',0,0,0,None,None,None),
+    ('es','Español (es)',6,2,3,None,None),
+    ('en','Inglés (en)',3,1,1,None,None),
+    ('unknown','Sin idioma (unknown)',0,0,0,None,None),
 ]
 assert sum(r[2] for r in REASONS)==CLD and N>=MIN and N24<MIN
 assert sum(x[2] for x in LANG_LOADED)==DEV and sum(x[3] for x in LANG_LOADED)==CLD and sum(x[2]+x[3] for x in LANG_LOADED)==N
 assert sum(x[2] for x in LANG_24)==DEV24 and sum(x[3] for x in LANG_24)==CLD24 and sum(x[2]+x[3] for x in LANG_24)==N24
+assert sum(x[4] for x in LANG_LOADED)==SHEET_N and sum(x[4] for x in LANG_24)==SHEET24
 OFF={}
 LOADED=dict(FEAT=FEAT,REASONS=REASONS,DEV=DEV,CLD=CLD,N=N,OFF={},SHEET_ANS=SHEET_N,LANG_ROWS=LANG_LOADED)
 
@@ -38,9 +41,9 @@ NT_DEV=sum(f[2] for f in NT_FEAT); NT_CLD=sum(f[3] for f in NT_FEAT); NT_N=NT_DE
 NT_SHEET=60
 NT_REASONS=[('no_threshold','Sin umbral aún',200),('no_model','El teléfono no tiene el asistente integrado',24),('low_confidence','Respuesta poco segura (bajo el umbral de cada función)',12),('long_input','Texto muy largo para el teléfono',4)]
 NT_LANG=[
-    ('es','Español (es)',114,166,14,'5%','0,4 s','1,8 s'),
-    ('en','Inglés (en)',42,66,8,'7%','0,4 s','2,0 s'),
-    ('none','sin idioma',4,8,1,None,None,None),
+    ('es','Español (es)',114,166,40,'1,4 s','3,2 s'),
+    ('en','Inglés (en)',42,66,16,'1,5 s','3,4 s'),
+    ('unknown','Sin idioma (unknown)',4,8,4,None,None),
 ]
 NOTHR=dict(FEAT=NT_FEAT,REASONS=NT_REASONS,DEV=NT_DEV,CLD=NT_CLD,N=NT_N,OFF=NT_OFF,SHEET_ANS=NT_SHEET,LANG_ROWS=NT_LANG)
 EXAMPLE_THR={'rsvp':{'high':0.85,'cloud_cutoff':0.60},'song':{'high':0.85,'cloud_cutoff':0.60}}  # design example only
@@ -48,7 +51,7 @@ assert NT_N==400 and (NT_DEV,NT_CLD,NT_OFFLINE)==(160,240,8) and round(NT_DEV*10
 assert sum(r[2] for r in NT_REASONS)==NT_CLD and sum(NT_OFF.values())==NT_OFFLINE
 assert dict((r[0],r[2]) for r in NT_REASONS)['no_threshold']==NT_FEAT[0][3]
 assert sum(r[2] for r in NT_REASONS if r[0]!='no_threshold')==sum(f[3] for f in NT_FEAT[1:])
-assert sum(x[2] for x in NT_LANG)==NT_DEV and sum(x[3] for x in NT_LANG)==NT_CLD and sum(x[2]+x[3] for x in NT_LANG)==NT_N
+assert sum(x[2] for x in NT_LANG)==NT_DEV and sum(x[3] for x in NT_LANG)==NT_CLD and sum(x[2]+x[3] for x in NT_LANG)==NT_N and sum(x[4] for x in NT_LANG)==NT_SHEET
 assert not has_threshold(cfg('guest_question'))
 
 def use(ds):
@@ -89,7 +92,7 @@ CSS='''
 .lrow:first-child{border-top:0}
 .llab b{display:block}
 .llab span{font-size:var(--text-sm);color:var(--color-text-muted)}
-.lmetrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3);align-items:start}
+.lmetrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-3);align-items:start}
 .lmet{display:flex;flex-direction:column;gap:2px}
 .lmet .k{font-size:var(--text-sm);color:var(--color-text-muted)}
 .lmet .val{font-size:var(--text-base);font-weight:700;font-variant-numeric:tabular-nums}
@@ -120,7 +123,6 @@ M_CSS='''
 .frow .lab{grid-area:lab}.frow .n{grid-area:n}.frow .split{grid-area:bar}
 .lrow{grid-template-columns:1fr;padding:var(--space-4) var(--space-5);gap:var(--space-3)}
 .lmetrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}
-.lmetrics .lmet-lat{grid-column:1/-1}
 .sheet-body{padding:var(--space-4) var(--space-5)}
 .sheet-body .v{font-size:var(--text-4xl)}
 .cardh{padding:var(--space-4) var(--space-5)}
@@ -190,25 +192,31 @@ def reasons(state):
 
 def lang_split(state):
     if state=='loading':
-        rows=''.join('<div class="lrow"><div class="llab"><span class="skeleton" style="width:120px;height:18px"></span></div><div class="lmetrics"><span class="skeleton" style="height:36px"></span><span class="skeleton" style="height:36px"></span><span class="skeleton" style="height:36px"></span></div></div>' for _ in range(3))
+        sk='<span class="skeleton" style="height:36px"></span>'
+        rows=''.join(f'<div class="lrow"><div class="llab"><span class="skeleton" style="width:140px;height:18px"></span></div><div class="lmetrics">{sk}{sk}{sk}{sk}</div></div>' for _ in range(3))
     else:
         data=LANG_24 if state=='few' else LANG_ROWS
         rows=''
-        for code,label,d,c,ref,ref_pct,ld,lc in data:
+        for code,label,d,c,sheet,p50,p95 in data:
             n=d+c
-            note='Filas sin campo lang (cuentan en los totales)' if code=='none' else f'{d} en tu teléfono · {c} en la nube'
-            if n==0:
+            note='Filas sin campo lang (cuentan en los totales)' if code=='unknown' else f'{d} en tu teléfono · {c} en la nube'
+            if n==0 and sheet==0:
                 right=f'<div class="lfew"><span class="few-note">Sin respuestas todavía</span></div>'
             elif n<MIN:
-                right=f'<div class="lfew"><span class="few-note">{I("info",16)}Pocos datos aún</span><span class="sub">{d} de {n} en tu teléfono · {ref} sin respuesta</span></div>'
+                sheet_txt=f' · {sheet} de la ficha' if sheet else ''
+                count_txt=(f'{n} respuestas IA · {d} de {n} en tu teléfono{sheet_txt}' if n else f'{sheet} de la ficha')
+                right=f'<div class="lfew"><span class="few-note">{I("info",16)}Pocos datos aún</span><span class="sub">{count_txt}</span></div>'
             else:
-                right=f'''<div class="lmetrics">
-<div class="lmet"><span class="k">En tu teléfono</span><span class="val">{round(d*100/n)}%</span><span class="sub">{d} de {n}</span></div>
-<div class="lmet"><span class="k">Sin respuesta</span><span class="val">{ref_pct}</span><span class="sub">{ref} de {n}</span></div>
-<div class="lmet lmet-lat"><span class="k">Rapidez (mediana)</span><span class="val">{ld} tel · {lc} nube</span><span class="sub">Solo respuestas con IA</span></div>
-</div>'''
-            rows+=f'<div class="lrow"><div class="llab"><b>{label}</b><span>{n} filas · {note}</span></div>{right}</div>'
-    return f'<section class="card"><div class="cardh"><h2>Por idioma del invitado</h2><span class="sm muted">Equidad · campo opcional <code>lang</code></span></div><div>{rows}</div></section>'
+                right=(
+                    '<div class="lmetrics">'
+                    f'<div class="lmet"><span class="k">Respuestas IA</span><span class="val">{n}</span><span class="sub"><code>ai_rows</code></span></div>'
+                    f'<div class="lmet"><span class="k">En tu teléfono</span><span class="val">{round(d*100/n)}%</span><span class="sub">{d} de {n}</span></div>'
+                    f'<div class="lmet"><span class="k">Rapidez</span><span class="val">p50 {p50}</span><span class="sub">p95 {p95}</span></div>'
+                    f'<div class="lmet"><span class="k">De la ficha</span><span class="val">{sheet}</span><span class="sub"><code>sheet_answers</code></span></div>'
+                    '</div>'
+                )
+            rows+=f'<div class="lrow"><div class="llab"><b>{label}</b><span>{n} respuestas IA · {note}</span></div>{right}</div>'
+    return f'<section class="card"><div class="cardh"><h2>Por idioma del invitado</h2><span class="sm muted">Equidad · <code>by_lang</code> (<code>es</code>, <code>en</code>, <code>unknown</code>)</span></div><div>{rows}</div></section>'
 
 def sheet_card(state):
     if state=='loading':
