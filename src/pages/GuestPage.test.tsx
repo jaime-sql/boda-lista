@@ -132,6 +132,9 @@ describe('GuestPage', () => {
     for (const label of ['Horario', 'Lugar', 'Vestimenta', 'Parqueo', 'Regalos', 'Contactos']) {
       await user.click(screen.getByRole('button', { name: label }));
     }
+    expect(screen.getAllByText('De la ficha de la boda').length).toBe(6);
+    expect(screen.queryByText('From the wedding info')).toBeNull();
+    expect(screen.queryByText(UNSURE_LABEL)).toBeNull();
     await user.click(screen.getByRole('button', { name: 'EN' }));
     for (const label of ['Schedule', 'Venue', 'Dress code', 'Parking', 'Gifts', 'Contacts']) {
       await user.click(screen.getByRole('button', { name: label }));
@@ -143,9 +146,11 @@ describe('GuestPage', () => {
     expect(logged.mock.calls.slice(6).map((call) => call[1])).toEqual(['en', 'en', 'en', 'en', 'en', 'en']);
     expect(screen.queryByText('Buscando en la información de la boda…')).toBeNull();
     expect(screen.queryByText(/Firebase/)).toBeNull();
-    expect(screen.getAllByText('En la hoja').length).toBe(12);
+    expect(screen.getAllByText('From the wedding info').length).toBe(12);
+    expect(screen.queryByText('De la ficha de la boda')).toBeNull();
     expect(screen.queryByText('En la nube')).toBeNull();
     expect(screen.queryByText('En tu teléfono')).toBeNull();
+    expect(screen.queryByText(UNSURE_LABEL)).toBeNull();
     expect(screen.getAllByText(/16:00 Ceremonia \/ Ceremony, Jardín Principal/)).toHaveLength(2);
     expect(screen.getByText(/The wedding is at Hacienda El Sauce, Km 12.5 Carretera a La Libertad/)).toBeTruthy();
     expect(screen.getByText(/Cocktail attire. Guayaberas are welcome./)).toBeTruthy();

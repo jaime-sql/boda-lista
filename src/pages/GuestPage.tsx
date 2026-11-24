@@ -358,7 +358,7 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
               <div className="bubble-q">{turn.question}</div>
               {turn.unknown ? (
                 <div className="bubble-a bubble-idk">
-                  {turn.unsure ? <p className="unsure-label">{UNSURE_LABEL}</p> : null}
+                  {turn.route !== 'sheet' && turn.unsure ? <p className="unsure-label">{UNSURE_LABEL}</p> : null}
                   <h2 className="display">{refusalPhrase(turn.answer) ?? UNKNOWN_ANSWER}</h2>
                   <p>{copy.idkBody}</p>
                   <div className="stack gap-2 idk-actions">
@@ -384,16 +384,16 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
                     </button>
                   </div>
                   <div className="foot">
-                    <RouteBadge route={turn.route} />
+                    <RouteBadge route={turn.route} lang={lang} />
                     <span className="sm muted">{copy.noSource}</span>
                   </div>
                 </div>
               ) : (
                 <div className="bubble-a">
-                  {turn.unsure ? <p className="unsure-label">{UNSURE_LABEL}</p> : null}
+                  {turn.route !== 'sheet' && turn.unsure ? <p className="unsure-label">{UNSURE_LABEL}</p> : null}
                   <p>{turn.answer}</p>
                   <div className="foot">
-                    <RouteBadge route={turn.route} />
+                    <RouteBadge route={turn.route} lang={lang} />
                     <span className="sm muted">
                       {source ? `${copy.source}: ${source}` : copy.noSource}
                     </span>
