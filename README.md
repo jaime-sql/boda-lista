@@ -1,6 +1,6 @@
 # Boda Lista
 
-Boda Lista helps a couple run their wedding from a desktop Chrome web app. Feature 1 is a guest question page: an invitee asks about the schedule, dress code, venue, parking, gifts, or contacts, and the answer has to come from the wedding sheet.
+Boda Lista helps a couple run their wedding from a desktop Chrome web app. Feature 1 is a guest question page: an invitee asks about the schedule, dress code, venue, parking, gifts, or contacts, and the answer has to come from the wedding sheet. Feature 2 is RSVP at `/rsvp`: the guest pastes a WhatsApp-style reply in Spanish or English, hybrid inference extracts the schema fields, and the guest confirms the card before it is saved.
 
 The app is a `#BuildHybridAI` 2026 entry. Prompts go through Firebase AI Logic hybrid inference. Chrome uses Gemini Nano on the device when that model is available, and the same call falls back to the cloud Gemini model when it is not.
 
@@ -41,12 +41,15 @@ Each call writes one `prompt_logs` document. The document stores sizes and routi
 | `input_chars` | Characters sent to the model |
 | `output_chars` | Characters returned |
 | `model` | `gemini-nano` or the cloud model id |
-| `confidence` | Caller-supplied number, or null |
+| `confidence` | Caller-supplied number, or null. An RSVP row is updated in this browser with the model's confidence after a valid extraction. |
 | `session_id` | Random id stored in the browser |
+| `edited_by_guest` | RSVP rows only. `false` when the log is written, then `true` in this browser's debug panel if the guest changes the card before sending. |
 
 Cloud fallback reasons: `no_model` when Gemini Nano is not available, `long_input` when the prompt is over 8000 characters, and `low_confidence` when a numeric `cloud_cutoff` is set and the caller passes a confidence below it. If `high` or `cloud_cutoff` is null, there is no band: online answers use the cloud model with reason `no_threshold`, and offline answers use Gemini Nano with reason `offline_no_threshold` and the label "Respuesta poco segura". A device route with an active threshold stores a null reason.
 
 Guests can create those rows. Only a signed-in Google user can read them, from `/admin`. Firestore rules reject every other field, so a client cannot attach the question text.
+
+A confirmed RSVP is a separate `rsvps` document: invite code, `attending`, `party_size`, `meal_restrictions`, `kids_count`, `needs_ride`, `ambiguous`, `edited`, and `ts`. Rules allow create only when that shape is valid. The raw message and guest names are not stored. Invalid model JSON is sent once more to the cloud model; if that is still unreadable, the confirmation card opens empty with a revisa note. `ambiguous` or `maybe` highlights the fields to check. With the current null thresholds, an online extraction is `cloud` / `no_threshold`, and an offline extraction is Gemini Nano, route `device`, reason `offline_no_threshold`, labeled "Respuesta poco segura".
 
 ## Wedding sheet
 
@@ -75,7 +78,7 @@ On-device inference needs desktop Chrome 139 or newer and the flag below. It doe
 npm run dev
 ```
 
-Open the URL Vite prints (usually `http://127.0.0.1:5173`). The guest page is `/`. The organizer page is `/admin`.
+Open the URL Vite prints (usually `http://127.0.0.1:5173`). The guest page is `/`. RSVP is `/rsvp` (also the Confirmar tab). The organizer page is `/admin`. An invite code can be passed as `/rsvp?code=FAM1`.
 
 ## Firebase emulators
 
@@ -132,7 +135,7 @@ Direction A, Izote y Barro, is applied. Colors, type, spacing, and radii live in
 
 Live URL: Firebase Hosting publishes this project at `https://<FIREBASE_PROJECT_ID>.web.app` (and `https://<FIREBASE_PROJECT_ID>.firebaseapp.com`) after the `main` workflow runs. This repo does not hard-code a project id. On a pull request, the preview workflow comments a temporary URL when `FIREBASE_SERVICE_ACCOUNT` and `FIREBASE_PROJECT_ID` are configured. That preview channel expires after 7 days.
 
-Guest pages do not require a login. `/` is the question page. `/admin` is optional and asks for Google sign-in only so an organizer can read `prompt_logs`.
+Guest pages do not require a login. `/` is the question page. `/rsvp` is the RSVP page. `/admin` is optional and asks for Google sign-in only so an organizer can read `prompt_logs` and saved RSVPs.
 
 On-device test (this is the real Gemini Nano path):
 
@@ -149,7 +152,7 @@ Unsupported devices: phones, browsers other than desktop Chrome, and Chrome with
 - `npm run dev` shows the same panel at `http://127.0.0.1:5173/?debug=1`.
 - The production deploy does not set `VITE_ENABLE_DEBUG`. A production URL ignores `?debug=1`.
 
-The panel shows device-model availability, the route taken, whether an App Check token is present (`yes` or `no` only), and the last `prompt_log` document id from this browser session with `ts`, `feature`, `route`, `fallback_reason`, `latency_ms`, `input_chars`, `output_chars`, `model`, `confidence`, and `session_id`. It does not show the prompt, the answer, the App Check token, or guest names.
+The panel shows device-model availability, the route taken, whether an App Check token is present (`yes` or `no` only), and the last `prompt_log` document id from this browser session with `ts`, `feature`, `route`, `fallback_reason`, `latency_ms`, `input_chars`, `output_chars`, `model`, `confidence`, and `session_id`. RSVP rows also show `edited_by_guest`. It does not show the prompt, the answer, the raw RSVP message, the App Check token, or guest names.
 
 App Check is initialized with reCAPTCHA Enterprise. For a local cloud call, register `VITE_APPCHECK_DEBUG_TOKEN` in the Firebase console. Do not ship that token in the public Hosting build.
 

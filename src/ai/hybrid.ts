@@ -1,6 +1,6 @@
 import { getAI, getGenerativeModel, GoogleAIBackend, InferenceMode } from 'firebase/ai';
 import { probeDeviceModel } from './device';
-import { cloudModelName, normalizeConfidence, ON_DEVICE_MODEL_NAME, planRoute } from './fallback';
+import { classifyFallback, cloudModelName, normalizeConfidence, ON_DEVICE_MODEL_NAME, planRoute } from './fallback';
 import { thresholdsFor } from '../config/confidence';
 import type { AskContext, AskResult, Feature, PromptLog } from './types';
 import { FEATURES } from './types';
@@ -59,7 +59,7 @@ export async function ask(prompt: string, context: AskContext): Promise<AskResul
   const ai = getAI(app, { backend: new GoogleAIBackend() });
   const deviceStatusPromise = probeDeviceModel();
   const deviceStatus = await deviceStatusPromise;
-  const plan = planRoute({
+  let plan = planRoute({
     online,
     high: thresholds.high,
     cloudCutoff: thresholds.cloud_cutoff,
@@ -67,6 +67,22 @@ export async function ask(prompt: string, context: AskContext): Promise<AskResul
     deviceStatus,
     inputChars,
   });
+  if (context.forceCloud && online) {
+    const noThreshold = thresholds.high === null || thresholds.cloud_cutoff === null;
+    plan = {
+      mode: 'only_in_cloud',
+      route: 'cloud',
+      reason: noThreshold
+        ? 'no_threshold'
+        : classifyFallback({
+            route: 'cloud',
+            deviceStatus,
+            inputChars,
+            confidence,
+            cloudCutoff: thresholds.cloud_cutoff,
+          }),
+    };
+  }
   const mode =
     plan.mode === 'only_in_cloud'
       ? InferenceMode.ONLY_IN_CLOUD
@@ -94,7 +110,7 @@ export async function ask(prompt: string, context: AskContext): Promise<AskResul
     const result = await generation;
     const latencyMs = Math.max(0, Math.round(performance.now() - started));
     const text = readText(result.response);
-    const settled = planRoute({
+    let settled = planRoute({
       online,
       high: thresholds.high,
       cloudCutoff: thresholds.cloud_cutoff,
@@ -103,6 +119,14 @@ export async function ask(prompt: string, context: AskContext): Promise<AskResul
       deviceStatus,
       inputChars,
     });
+    if (context.forceCloud && online) {
+      const noThreshold = thresholds.high === null || thresholds.cloud_cutoff === null;
+      settled = {
+        mode: 'only_in_cloud',
+        route: 'cloud',
+        reason: noThreshold ? 'no_threshold' : settled.reason,
+      };
+    }
     const route = settled.route;
     const fallbackReason = settled.reason;
     const modelName = route === 'device' ? ON_DEVICE_MODEL_NAME : cloudModel;
@@ -117,6 +141,7 @@ export async function ask(prompt: string, context: AskContext): Promise<AskResul
       model: modelName,
       confidence,
       session_id: sessionId,
+      ...(context.feature === 'rsvp' ? { edited_by_guest: false } : {}),
     });
     return {
       text,
@@ -142,6 +167,7 @@ export async function ask(prompt: string, context: AskContext): Promise<AskResul
       model: route === 'device' ? ON_DEVICE_MODEL_NAME : cloudModel,
       confidence,
       session_id: sessionId,
+      ...(context.feature === 'rsvp' ? { edited_by_guest: false } : {}),
     });
     throw error;
   }

@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import type { AskResult } from '../ai/types';
 import { ToastProvider } from '../components/ToastProvider';
 import { GuestPage, UNSURE_LABEL } from './GuestPage';
@@ -23,9 +24,11 @@ describe('GuestPage', () => {
     const pending = deferred();
     const requestAnswer = vi.fn(() => pending.promise);
     render(
-      <ToastProvider>
-        <GuestPage requestAnswer={requestAnswer} />
-      </ToastProvider>,
+      <MemoryRouter>
+        <ToastProvider>
+          <GuestPage requestAnswer={requestAnswer} />
+        </ToastProvider>
+      </MemoryRouter>,
     );
 
     expect(await screen.findByRole('heading', { level: 1 })).toHaveProperty(
@@ -65,9 +68,11 @@ describe('GuestPage', () => {
       model: 'gemini-nano',
     }));
     render(
-      <ToastProvider>
-        <GuestPage requestAnswer={requestAnswer} />
-      </ToastProvider>,
+      <MemoryRouter>
+        <ToastProvider>
+          <GuestPage requestAnswer={requestAnswer} />
+        </ToastProvider>
+      </MemoryRouter>,
     );
     await screen.findByRole('heading', { level: 1 });
     await user.type(screen.getByLabelText('Tu pregunta'), '¿A qué hora es?');

@@ -54,6 +54,7 @@ function sanitize(value: unknown): LocalPromptLog | null {
   }
   const confidence = raw.confidence;
   if (confidence !== null && typeof confidence !== 'number') return null;
+  if ('edited_by_guest' in raw && typeof raw.edited_by_guest !== 'boolean') return null;
   return {
     id: raw.id,
     ts: raw.ts,
@@ -66,6 +67,7 @@ function sanitize(value: unknown): LocalPromptLog | null {
     model: raw.model,
     confidence,
     session_id: raw.session_id,
+    ...(typeof raw.edited_by_guest === 'boolean' ? { edited_by_guest: raw.edited_by_guest } : {}),
   };
 }
 
@@ -107,6 +109,25 @@ export function getLastPromptLog(): LocalPromptLog | null {
 export function subscribeLastPromptLog(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
+}
+
+export function markLastPromptDetails(patch: {
+  confidence?: number | null;
+  edited_by_guest?: boolean;
+}): void {
+  const current = memory ?? readStorage();
+  if (!current) return;
+  memory = {
+    ...current,
+    ...(patch.confidence !== undefined ? { confidence: patch.confidence } : {}),
+    ...(patch.edited_by_guest !== undefined ? { edited_by_guest: patch.edited_by_guest } : {}),
+  };
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(memory));
+  } catch {
+    // The in-memory copy still feeds this tab.
+  }
+  notify();
 }
 
 export function clearLastPromptLog(): void {

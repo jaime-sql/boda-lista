@@ -11,6 +11,12 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    match /rsvps/{rsvpId} {
+      allow create: if isValidRsvp(request.resource.data);
+      allow read: if request.auth != null;
+      allow update, delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
@@ -28,8 +34,10 @@ function isValidPromptLog(data) {
       'output_chars',
       'model',
       'confidence',
-      'session_id'
+      'session_id',
+      'edited_by_guest'
     ])
+    && (!data.keys().hasAny(['edited_by_guest']) || data.edited_by_guest is bool)
     && data.ts is string
     && data.ts.size() >= 20
     && data.ts.size() <= 40
@@ -55,4 +63,43 @@ function isValidPromptLog(data) {
     && data.session_id is string
     && data.session_id.size() >= 8
     && data.session_id.size() <= 80;
+}
+
+function mealsOk(tags) {
+  return tags.size() == 0
+    || (
+      tags[0] is string
+      && tags[0].matches('^(vegetarian|vegan|gluten_free|kids_menu|allergy:[a-z][a-z0-9_]{0,31})$')
+      && mealsOk(tags.removeAll([tags[0]]))
+    );
+}
+
+function isValidRsvp(data) {
+  return data.keys().hasOnly([
+      'household_id',
+      'attending',
+      'party_size',
+      'meal_restrictions',
+      'kids_count',
+      'needs_ride',
+      'ambiguous',
+      'edited',
+      'ts'
+    ])
+    && data.household_id is string
+    && data.household_id.size() >= 4
+    && data.household_id.size() <= 40
+    && data.household_id.matches('^[A-Za-z0-9-]+$')
+    && data.attending in ['yes', 'no', 'maybe']
+    && (data.party_size == null || (data.party_size is int && data.party_size >= 1))
+    && data.meal_restrictions is list
+    && data.meal_restrictions.size() <= 8
+    && mealsOk(data.meal_restrictions)
+    && (data.kids_count == null || (data.kids_count is int && data.kids_count >= 0))
+    && (data.needs_ride == null || data.needs_ride is bool)
+    && data.ambiguous is bool
+    && data.edited is bool
+    && data.ts is string
+    && data.ts.size() >= 20
+    && data.ts.size() <= 40;
 }
