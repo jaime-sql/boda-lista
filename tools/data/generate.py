@@ -4,12 +4,13 @@
 Stdlib only. Fixed seed. All names, contacts and venues are fictional.
 The 300 hand-checked RSVP replies are the test set only.
 
-Future Modal generation (do not run until a fresh token is available):
-  python generate.py --generate-modal
-would write data/rsvp_dev_generated.jsonl (split=dev) and
-data/rsvp_stress.jsonl (split=stress). Those files must never use
-split=test and must not reuse test ids or texts. The flag is a no-op
-in this revision because the Modal token is expired.
+Dev and stress rows are template-generated, not modeled. From the repo root:
+
+  python tools/data/generate_dev.py
+
+That command uses seed 20261124 and does not call Modal. `--generate-modal`
+stays a no-op because the Modal token is expired. Generated rows must never
+use split=test and must not reuse test ids or texts.
 
 Usage:
   python generate.py
@@ -516,11 +517,10 @@ def build_rsvps(households: list[dict], rng: random.Random) -> list[dict]:
 def generate_modal_sets(_args: argparse.Namespace) -> int:
     print(
         "Modal generation is not wired in this revision (token expired). "
-        "Hand-checked test files were written without calling Modal. "
-        "When a fresh token is available, this flag should write "
-        "data/rsvp_dev_generated.jsonl (split=dev) and data/rsvp_stress.jsonl "
-        "(split=stress only). Those files must never use split=test and must "
-        "not reuse test ids or texts. See README.md.",
+        "Dev and stress files come from tools/data/generate_dev.py "
+        "(deterministic templates, seed 20261124), not from Modal. "
+        "Those files must never use split=test and must not reuse test ids "
+        "or texts. See docs/data.md.",
         file=sys.stderr,
     )
     return 2
@@ -531,7 +531,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--generate-modal",
         action="store_true",
-        help="Placeholder for the future ~2,000-row dev/stress RSVP run. Does not call Modal yet.",
+        help="No-op. Dev and stress rows are written by generate_dev.py. The Modal token is expired.",
     )
     args = parser.parse_args(argv)
     rng = random.Random(SEED)

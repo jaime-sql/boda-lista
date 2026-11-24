@@ -21,7 +21,7 @@ python -m pytest evals/tests
 
 `data/schema.json` on main is the row contract (`$defs` for `rsvp`, `song`, `guest_question`, `wedding_info`). The loader validates with that file when it is present and falls back to `evals/schema_builtin.json` when it is missing. `evals/field_map.json` maps old names such as `meal_needs` onto `meal_restrictions`. The row's `split` field wins; a file name that disagrees only warns.
 
-The checked-in pack is test-only: `data/rsvp_replies.jsonl` (300), `data/song_requests.jsonl` (60), `data/guest_questions.jsonl` (42). Dev and stress files are not in the pack yet. The threshold command exits with an error when no dev rows exist, and it will not open `rsvp_replies.jsonl` or `song_requests.jsonl` while choosing a threshold.
+The hand-checked test pack is `data/rsvp_replies.jsonl` (300), `data/song_requests.jsonl` (60), and `data/guest_questions.jsonl` (42). Template dev and stress files are described in `docs/data.md`. The threshold command exits with an error when no dev rows exist, and it will not open `rsvp_replies.jsonl` or `song_requests.jsonl` while choosing a threshold.
 
 Guest questions are out of scope. The unknown gold string is exactly `No tengo esa información, pregúntale a los novios` (`evals/guest_questions.py`).
 
@@ -67,7 +67,7 @@ python -m http.server 8765
 
 Open `http://localhost:8765/evals/nano_runner/index.html` in desktop Chrome 139 or newer. Enable `chrome://flags/#prompt-api-for-gemini-nano-multimodal-input` for on-device mode. Pick the JSONL, the prompt file if fetch fails, and the Firebase config. Leave **On-device only** selected for Nano (`InferenceMode.ONLY_ON_DEVICE`). Switch to **Cloud only** for cloud Gemini (`ONLY_IN_CLOUD`). The Run button calls `initializeDeviceModel` on a click, then writes a predictions JSONL. If on-device mode reports an in-cloud source, the row is stored as `unexpected_cloud_fallback` and is not counted as Nano.
 
-Threshold selection uses dev rows only. Until `data/rsvp_dev_generated.jsonl` exists, this command refuses to run:
+Threshold selection uses dev rows only. If the dev files are missing, this command refuses to run:
 
 ```bash
 python -m evals.threshold \

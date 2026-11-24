@@ -1,0 +1,30 @@
+{
+  "threshold": 90,
+  "engine": "rapidfuzz",
+  "files": {
+    "rsvp_dev_generated.jsonl": {
+      "rows": 1500,
+      "text_leaks": 0,
+      "id_leaks": 0,
+      "max_similarity": 55.03
+    },
+    "rsvp_stress.jsonl": {
+      "rows": 500,
+      "text_leaks": 0,
+      "id_leaks": 0,
+      "max_similarity": 46.53
+    },
+    "song_dev_generated.jsonl": {
+      "rows": 60,
+      "text_leaks": 0,
+      "id_leaks": 0,
+      "max_similarity": 84.21
+    },
+    "guest_question_dev_generated.jsonl": {
+      "rows": 120,
+      "text_leaks": 0,
+      "id_leaks": 0,
+      "max_similarity": 43.33
+    }
+  }
+}
