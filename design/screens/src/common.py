@@ -39,6 +39,8 @@ def I(name,size=20,stroke=2):
 
 DEVICE=f'<span class="badge badge-device">{I("phone",18)}En tu teléfono</span>'
 CLOUD=f'<span class="badge badge-cloud">{I("cloud",18)}En la nube</span>'
+SHEET=f'<span class="badge badge-sheet">{I("info",18)}De la ficha de la boda</span>'
+SHEET_EN=f'<span class="badge badge-sheet">{I("info",18)}From the wedding info</span>'
 REVIEW=f'<span class="badge badge-review">{I("flag",16)}Revisar</span>'
 
 IZOTE='''<svg width="{w}" height="{h}" viewBox="0 0 92 120" fill="none" stroke="var(--color-primary)" stroke-width="1.4" aria-hidden="true"><path d="M46 120V30"/><g fill="var(--color-bg)"><path d="M46 30c-7-4-9-13-4-20 3 6 5 9 4 20z"/><path d="M46 30c7-4 9-13 4-20-3 6-5 9-4 20z"/><path d="M46 48c-10-2-15-10-11-18 4 5 8 7 11 18z"/><path d="M46 48c10-2 15-10 11-18-4 5-8 7-11 18z"/><path d="M46 66c-11 0-18-8-16-17 5 4 10 6 16 17z"/><path d="M46 66c11 0 18-8 16-17-5 4-10 6-16 17z"/></g><path d="M46 112c-10-6-26-6-38 0M46 112c10-6 26-6 38 0" stroke="var(--color-success-fg)"/></svg>'''

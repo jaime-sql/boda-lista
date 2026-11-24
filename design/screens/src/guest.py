@@ -4,16 +4,21 @@ def qa(fname,title,chat,active=None,ph='Escribe tu pregunta…'):
     open(f'../{fname}.html','w').write(page(title,body,390,GUEST_CSS))
 
 qa('guest-qa-device','Preguntas · respuesta en el teléfono',f'''
+<div class="bubble-q">¿Puedo ir con tacones de aguja al jardín?</div>
+<div class="bubble-a"><h4>Formal de verano</h4>Ellos con guayabera o camisa clara; ellas con vestido midi o largo en tonos claros. El blanco, solo para la novia. Es en jardín: mejor tacón ancho.
+<div class="foot">{DEVICE}<span class="sm muted">Fuente: Vestimenta</span></div></div>''')
+
+qa('guest-qa-sheet','Preguntas · desde la ficha de la boda',f'''
 <div class="bubble-q">¿Cuál es el código de vestimenta?</div>
 <div class="bubble-a"><h4>Formal de verano</h4>Ellos con guayabera o camisa clara; ellas con vestido midi o largo en tonos claros. El blanco, solo para la novia. Es en jardín: mejor tacón ancho.
-<div class="foot">{DEVICE}<span class="sm muted">Fuente: Vestimenta</span></div></div>''','Vestimenta')
+<div class="foot">{SHEET}<span class="sm muted">Fuente: Vestimenta</span></div></div>''','Vestimenta')
 
 qa('guest-qa-offline','Preguntas · sin señal',f'''
 <div class="banner banner-offline" role="status">{I("wifioff",22)}<div><b>Sin señal.</b> Igual te respondemos desde tu teléfono con la información guardada.</div></div>
 <div class="bubble-q">¿A qué hora empieza la ceremonia?</div>
 <div class="bubble-a"><h4>La ceremonia es a las 4:00 p. m.</h4>Te recomendamos llegar 30 minutos antes.
 <ul class="sched"><li><b>3:30 p. m.</b>Llegada y bienvenida</li><li><b>4:00 p. m.</b>Ceremonia en el jardín</li><li><b>5:30 p. m.</b>Cóctel</li><li><b>7:00 p. m.</b>Cena y baile</li></ul>
-<div class="foot">{DEVICE}<span class="sm muted">Fuente: Horario</span></div></div>''','Horario')
+<div class="foot">{DEVICE}<span class="sm muted">Fuente: Horario</span></div></div>''')
 
 qa('guest-qa-idk','Preguntas · pregúntale a los novios',f'''
 <div class="bubble-q">¿Puedo llevar a mi perrito?</div>
@@ -27,7 +32,7 @@ qa('guest-qa-cloud','Preguntas · respuesta en la nube',f'''
 <div class="bubble-a"><h4>Sí, y es gratis</h4>La finca tiene parqueo para 80 carros, con vigilante. Entra por el portón verde sobre la calle principal. Si se llena, hay espacio en el colegio de enfrente.
 <div class="foot">{CLOUD}<span class="sm muted">Fuente: Parqueo</span></div></div>
 <div class="bubble-q">¿Hay transporte desde San Salvador?</div>
-<div class="bubble-a" aria-busy="true"><div class="row gap-3"><span class="typing"><b></b><b></b><b></b></span><span class="muted">Buscando en la información de la boda…</span></div></div>''','Parqueo')
+<div class="bubble-a" aria-busy="true"><div class="row gap-3"><span class="typing"><b></b><b></b><b></b></span><span class="muted">Buscando en la información de la boda…</span></div></div>''')
 
 # ---------- RSVP form ----------
 RS_CSS=GUEST_CSS+'''

@@ -32,6 +32,7 @@ button,input,textarea,select{font:inherit;color:inherit}
 .badge svg{flex:none}
 .badge-device{background:var(--color-device-bg);color:var(--color-device-fg)}
 .badge-cloud{background:var(--color-cloud-bg);color:var(--color-cloud-fg)}
+.badge-sheet{background:var(--color-neutral-bg);color:var(--color-neutral-fg)}
 .badge-offline{background:var(--color-offline-bg);color:var(--color-offline-fg)}
 .badge-review{background:var(--color-danger-bg);color:var(--color-danger-fg)}
 .badge-yes{background:var(--color-success-bg);color:var(--color-success-fg)}
