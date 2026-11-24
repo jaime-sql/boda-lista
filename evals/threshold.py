@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from evals.guest_questions import answer_confidence, answer_text, format_guest_metric_line, is_hallucination
+from evals.guest_questions import answer_confidence, answer_text, format_guest_metric_line, is_fact_hallucination
 from evals.parsing import resolve_prediction
 from evals.score import index_predictions, item_correct, load_predictions, score_predictions
 
@@ -248,10 +248,12 @@ def select_guest_question_cutoff(
     items: list[dict[str, Any]],
     predictions_by_id: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
-    """Smallest dev confidence t with hallucination rate <= 2% and n >= min_n.
+    """Smallest dev confidence t with fact-hallucination rate <= 2% and n >= min_n.
 
-    Rows below t are the ones the app sends to the cloud. Test rows are refused
-    before any gold answer is scored.
+    A hallucination is an in-scope wrong_fact or an out-of-scope non-refusal.
+    Incomplete and abstain answers are not hallucinations. Rows below t are the
+    ones the app sends to the cloud. Test rows are refused before any gold
+    answer is scored.
     """
     assert_dev_only(items)
     if not items:
@@ -259,7 +261,7 @@ def select_guest_question_cutoff(
     scored: list[tuple[float | None, bool]] = []
     for item in items:
         prediction = predictions_by_id.get(item["id"])
-        scored.append((answer_confidence(prediction), is_hallucination(item, answer_text(prediction))))
+        scored.append((answer_confidence(prediction), is_fact_hallucination(item, answer_text(prediction))))
 
     def kept_rate(basis: int) -> tuple[int, float]:
         kept = [hallucinated for confidence, hallucinated in scored if confidence is not None and _basis(confidence) >= basis]

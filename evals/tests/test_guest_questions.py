@@ -7,10 +7,13 @@ from evals.score import score_predictions
 
 from evals.guest_questions import (
     UNKNOWN_ANSWER,
+    fact_label,
     facts_match,
+    is_fact_hallucination,
     is_hallucination,
     is_in_scope_correct,
     is_refusal,
+    legacy_is_hallucination,
     score_guest_questions,
 )
 from evals.threshold import (
@@ -68,10 +71,10 @@ def test_guest_cutoff_is_the_smallest_t_under_two_percent():
         items.append(_guest(index, "dev", "La ceremonia es a las 16:00."))
         preds[f"q{index}"] = _pred(index, "La ceremonia es a las 16:00 en el jardin.", 0.9)
     items.append(_guest(50, "dev", "La ceremonia es a las 16:00."))
-    preds["q50"] = _pred(50, "No hay horario.", 0.6)
+    preds["q50"] = _pred(50, "La ceremonia es a las 21:00.", 0.6)
     for index in range(51, 61):
         items.append(_guest(index, "dev", "La ceremonia es a las 16:00."))
-        preds[f"q{index}"] = _pred(index, "Inventado.", 0.1)
+        preds[f"q{index}"] = _pred(index, "Son las 15:00.", 0.1)
     chosen = select_guest_question_cutoff(items, preds)
     assert chosen["cloud_cutoff"] == pytest.approx(0.11)
     assert chosen["high"] == pytest.approx(0.61)
@@ -80,6 +83,35 @@ def test_guest_cutoff_is_the_smallest_t_under_two_percent():
     config = app_config({"guest_question": chosen, "rsvp": {}, "song": {}})
     assert config["guest_question"]["cloud_cutoff"] == pytest.approx(0.11)
     assert config["guest_question"]["min_n"] == 20
+
+
+def test_guest_cutoff_uses_fact_labels_not_token_f1():
+    gold = "La ceremonia es a las 16:00 en el jardin principal de la hacienda."
+    row = {"out_of_scope": False, "answer": gold}
+    assert legacy_is_hallucination(row, "16:00")
+    assert fact_label(row, "16:00") == "correct"
+    assert fact_label(row, "21:00") == "wrong_fact"
+    assert is_fact_hallucination({"out_of_scope": True, "answer": UNKNOWN_ANSWER}, "Son las 16:00.")
+    assert not is_fact_hallucination({"out_of_scope": True, "answer": UNKNOWN_ANSWER}, UNKNOWN_ANSWER)
+
+    def pack(low_answer: str, out_of_scope: bool = False) -> tuple[list[dict], dict]:
+        items = []
+        preds = {}
+        kept = UNKNOWN_ANSWER if out_of_scope else "La ceremonia es a las 16:00 en el jardin."
+        for index in range(24):
+            items.append(_guest(index, "dev", gold if not out_of_scope else UNKNOWN_ANSWER, out_of_scope))
+            preds[f"q{index}"] = _pred(index, kept, 0.9)
+        for index in range(24, 34):
+            items.append(_guest(index, "dev", gold if not out_of_scope else UNKNOWN_ANSWER, out_of_scope))
+            preds[f"q{index}"] = _pred(index, low_answer, 0.1)
+        return items, preds
+
+    short_items, short_preds = pack("16:00")
+    assert select_guest_question_cutoff(short_items, short_preds)["cloud_cutoff"] == pytest.approx(0.0)
+    wrong_items, wrong_preds = pack("21:00")
+    assert select_guest_question_cutoff(wrong_items, wrong_preds)["cloud_cutoff"] == pytest.approx(0.11)
+    outside_items, outside_preds = pack("Son las 16:00.", out_of_scope=True)
+    assert select_guest_question_cutoff(outside_items, outside_preds)["cloud_cutoff"] == pytest.approx(0.11)
 
 
 def test_guest_question_without_dev_stays_null():
