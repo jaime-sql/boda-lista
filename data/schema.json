@@ -113,19 +113,42 @@
         "text": { "type": "string", "minLength": 1 },
         "lang": { "type": "string", "enum": ["es", "en"] },
         "answer": { "type": "string", "minLength": 1 },
-        "out_of_scope": { "type": "boolean" }
+        "out_of_scope": { "type": "boolean" },
+        "gold_facts": {
+          "description": "Optional atomic facts an in-scope answer must contain. Times are zero-padded HH:MM. Place names are copied from the info sheet. Yes/no is the token yes or no. Omitted on out-of-scope rows.",
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
       },
-      "if": {
-        "properties": { "out_of_scope": { "const": true } },
-        "required": ["out_of_scope"]
-      },
-      "then": {
-        "properties": {
-          "answer": {
-            "const": "No tengo esa información, pregúntale a los novios"
+      "allOf": [
+        {
+          "if": {
+            "properties": { "out_of_scope": { "const": true }, "lang": { "const": "es" } },
+            "required": ["out_of_scope", "lang"]
+          },
+          "then": {
+            "properties": {
+              "answer": { "const": "No tengo esa información, pregúntale a los novios" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "out_of_scope": { "const": true },
+              "lang": { "const": "en" },
+              "split": { "enum": ["dev", "stress"] }
+            },
+            "required": ["out_of_scope", "lang", "split"]
+          },
+          "then": {
+            "properties": {
+              "answer": { "const": "I don't have that information, ask the couple" }
+            }
           }
         }
-      }
+      ]
     },
     "wedding_info": {
       "$anchor": "wedding_info",

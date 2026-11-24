@@ -264,13 +264,13 @@ def _run_threshold(args: list[str]) -> subprocess.CompletedProcess[str]:
 
 
 def test_threshold_refuses_without_dev_rows():
+    # These invocations do not name a dev file, so they still refuse.
+    # README_THRESHOLD_ARGS points at the checked-in dev batch and is not a
+    # "no dev rows" case once those files exist.
     cases = [
         [],
-        README_THRESHOLD_ARGS,
         ["--out", "evals/results/hybrid/summary.json"],
     ]
-    assert not (ROOT / "data" / "rsvp_dev_generated.jsonl").exists()
-    assert not (ROOT / "data" / "song_dev_generated.jsonl").exists()
     assert not (ROOT / "evals" / "results" / "nano-dev" / "predictions.jsonl").exists()
     for args in cases:
         result = _run_threshold(args)

@@ -1,3 +1,6 @@
 # Boda Lista synthetic data pack.
-# Python standard library only. No third-party packages.
-# Requires Python >= 3.10.
+# Python >= 3.10.
+# Template generation uses the standard library.
+# The leak check uses rapidfuzz when it is installed:
+#   pip install -r tools/data/requirements.txt
+# tools/data/validate.py falls back to difflib if rapidfuzz is missing.

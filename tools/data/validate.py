@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
-"""Validate the Boda Lista synthetic data pack. Stdlib only."""
+"""Validate the Boda Lista synthetic data pack.
+
+Stdlib plus optional rapidfuzz. If rapidfuzz is not installed, leak
+checks fall back to difflib and print a warning.
+"""
 
 from __future__ import annotations
 
+import difflib
 import json
 import re
 import sys
@@ -26,6 +31,133 @@ warnings: list[str] = []
 
 SCHEMA_PATH = DATA / "schema.json"
 UNKNOWN_ANSWER = "No tengo esa información, pregúntale a los novios"
+UNKNOWN_ANSWER_EN = "I don't have that information, ask the couple"
+UNKNOWN_BY_LANG = {"es": UNKNOWN_ANSWER, "en": UNKNOWN_ANSWER_EN}
+LEAK_REPORT_PATH = DATA / "leak_report.json"
+LEAK_THRESHOLD = 90
+
+# Generated files checked for schema, split, and test-set leaks.
+GENERATED_FILES = (
+    {
+        "name": "rsvp_dev_generated.jsonl",
+        "task": "rsvp",
+        "schema": "rsvp",
+        "split": "dev",
+        "count": 1500,
+        "langs": {"es": 1200, "en": 300},
+        "id_prefix": "dev-",
+    },
+    {
+        "name": "rsvp_stress.jsonl",
+        "task": "rsvp",
+        "schema": "rsvp",
+        "split": "stress",
+        "count": 500,
+        "langs": {"es": 400, "en": 100},
+        "id_prefix": "stress-",
+    },
+    {
+        "name": "song_dev_generated.jsonl",
+        "task": "song",
+        "schema": "song",
+        "split": "dev",
+        "count": 60,
+        "langs": {"es": 48, "en": 12},
+        "ambiguous": 15,
+        "id_prefix": "dev-",
+    },
+    {
+        "name": "guest_question_dev_generated.jsonl",
+        "task": "guest_question",
+        "schema": "guest_question",
+        "split": "dev",
+        "count": 120,
+        "langs": {"es": 90, "en": 30},
+        "out_of_scope": 40,
+        "id_prefix": "dev-",
+    },
+)
+
+LEAK_ENGINE = "rapidfuzz"
+_fuzz_ratio = None
+
+
+def _init_leak_engine() -> None:
+    global LEAK_ENGINE, _fuzz_ratio
+    try:
+        from rapidfuzz import fuzz
+    except ImportError:
+        LEAK_ENGINE = "difflib"
+        _fuzz_ratio = None
+        print(
+            "WARNING: rapidfuzz is not installed; falling back to "
+            "difflib.SequenceMatcher for leak checks."
+        )
+        return
+    LEAK_ENGINE = "rapidfuzz"
+    _fuzz_ratio = fuzz.ratio
+
+
+_init_leak_engine()
+
+
+def normalize_text(text: str) -> str:
+    """Lowercase and collapse whitespace, including ends."""
+    return " ".join(text.lower().split())
+
+
+def similarity(left: str, right: str) -> float:
+    """Return a 0–100 ratio. rapidfuzz fuzz.ratio, or difflib if it is missing."""
+    if _fuzz_ratio is not None:
+        return float(_fuzz_ratio(left, right))
+    return difflib.SequenceMatcher(None, left, right).ratio() * 100.0
+
+
+def difflib_similarity(left: str, right: str) -> float:
+    return difflib.SequenceMatcher(None, left, right).ratio() * 100.0
+
+
+def length_bound(left: str, right: str) -> float:
+    """Upper bound shared by fuzz.ratio and SequenceMatcher.ratio, on 0–100."""
+    left_len = len(left)
+    right_len = len(right)
+    if left_len == 0 or right_len == 0:
+        return 0.0
+    return 200.0 * min(left_len, right_len) / (left_len + right_len)
+
+
+def leak_stats(rows: list[dict], test_rows: list[dict], test_ids: set[str]) -> dict:
+    """Count id collisions and same-task text leaks. Track the max ratio."""
+    test_norms = [
+        normalize_text(row["text"])
+        for row in test_rows
+        if isinstance(row.get("text"), str)
+    ]
+    text_leaks = 0
+    id_leaks = 0
+    max_sim = 0.0
+    for row in rows:
+        if row.get("id") in test_ids:
+            id_leaks += 1
+        norm = normalize_text(row["text"]) if isinstance(row.get("text"), str) else ""
+        row_hit = False
+        for other in test_norms:
+            bound = length_bound(norm, other)
+            if bound < LEAK_THRESHOLD and bound <= max_sim:
+                continue
+            score = similarity(norm, other)
+            if score > max_sim:
+                max_sim = score
+            if score >= LEAK_THRESHOLD:
+                row_hit = True
+        if row_hit:
+            text_leaks += 1
+    return {
+        "rows": len(rows),
+        "text_leaks": text_leaks,
+        "id_leaks": id_leaks,
+        "max_similarity": round(max_sim, 2),
+    }
 
 
 def _is_type(instance, typ: str) -> bool:
@@ -122,6 +254,10 @@ def _schema_errors(instance, schema, root: dict, path: str) -> list[str]:
             found.extend(_schema_errors(instance, schema["then"], root, path))
         if if_errs and "else" in schema:
             found.extend(_schema_errors(instance, schema["else"], root, path))
+
+    if "allOf" in schema and isinstance(schema["allOf"], list):
+        for sub in schema["allOf"]:
+            found.extend(_schema_errors(instance, sub, root, path))
 
     return found
 
@@ -458,31 +594,6 @@ def validate_info() -> None:
             err("info_sheet.md: must be clearly marked synthetic/fictional")
 
 
-def validate_generated_placeholders(test_ids: set[str], test_texts: set[str]) -> None:
-    for name, allowed_splits in (
-        ("rsvp_dev_generated.jsonl", {"dev"}),
-        ("rsvp_stress.jsonl", {"stress"}),
-    ):
-        path = DATA / name
-        if not path.exists():
-            print(f"{name}: absent (placeholder; ok until Modal generation)")
-            continue
-        rows = load_jsonl(path)
-        print(f"{name}: {len(rows)} rows")
-        for i, row in enumerate(rows, 1):
-            check_rsvp_row(row, f"{name}:{i}")
-            if SCHEMA_ROOT:
-                check_against_schema(row, SCHEMA_ROOT, "rsvp", f"{name}:{i}")
-            if row.get("split") not in allowed_splits:
-                err(f"{name}:{i}: split must be {sorted(allowed_splits)}, got {row.get('split')!r}")
-            if row.get("split") == "test":
-                err(f"{name}:{i}: generated rows must never use split=test")
-            if row.get("id") in test_ids:
-                err(f"{name}:{i}: id {row.get('id')!r} collides with the hand-checked test set")
-            if row.get("text") in test_texts:
-                err(f"{name}:{i}: text collides with the hand-checked test set")
-
-
 def validate_vendors() -> None:
     path = DATA / "vendor_quotes.jsonl"
     if not path.exists():
@@ -500,11 +611,11 @@ def validate_vendors() -> None:
         )
 
 
-def validate_questions() -> None:
+def validate_questions() -> list[dict]:
     path = DATA / "guest_questions.jsonl"
     if not path.exists():
         warn("guest_questions.jsonl not found (optional)")
-        return
+        return []
     rows = load_jsonl(path)
     print(f"guest_questions.jsonl: {len(rows)} rows")
     if len(rows) < 30:
@@ -533,6 +644,92 @@ def validate_questions() -> None:
     unique_texts(rows, "guest_questions.jsonl")
     print(f"  out-of-scope answers: {unknown}")
     print_dist("lang", Counter(r.get("lang") for r in rows), len(rows) or 1)
+    return rows
+
+
+def _check_guest_answer(row: dict, where: str) -> None:
+    """Out-of-scope gold must be the refusal for the row's language."""
+    expected = UNKNOWN_BY_LANG.get(row.get("lang"))
+    if row.get("out_of_scope") is True:
+        if expected is None or row.get("answer") != expected:
+            err(
+                f"{where}: out-of-scope answer for lang {row.get('lang')!r} must be exactly "
+                f"{expected!r}, got {row.get('answer')!r}"
+            )
+    elif row.get("answer") in UNKNOWN_BY_LANG.values():
+        err(f"{where}: in-scope row uses an out-of-scope phrase")
+
+
+def validate_generated(test_rows_by_task: dict[str, list[dict]], test_ids: set[str], households: set[str]) -> None:
+    report_files: dict[str, dict] = {}
+    for spec in GENERATED_FILES:
+        name = spec["name"]
+        path = DATA / name
+        rows = load_jsonl(path)
+        print(f"{name}: {len(rows)} rows")
+        for i, row in enumerate(rows, 1):
+            where = f"{name}:{i}"
+            if spec["task"] == "rsvp":
+                check_rsvp_row(row, where)
+            elif spec["task"] == "song":
+                check_song_row(row, where)
+            else:
+                check_common(row, where, "guest_question")
+                require_keys(row, ["answer", "out_of_scope"], where)
+                _check_guest_answer(row, where)
+            if SCHEMA_ROOT:
+                check_against_schema(row, SCHEMA_ROOT, spec["schema"], where)
+            if row.get("split") != spec["split"]:
+                err(f"{where}: split must be {spec['split']!r}, got {row.get('split')!r}")
+            if row.get("split") == "test":
+                err(f"{where}: generated rows must never use split=test")
+            rid = row.get("id")
+            if isinstance(rid, str) and not rid.startswith(spec["id_prefix"]):
+                err(f"{where}: id {rid!r} must start with {spec['id_prefix']!r}")
+            hid = row.get("household_id")
+            if households and hid and hid not in households:
+                err(f"{where}: household_id {hid!r} not in guests/households")
+        unique_ids(rows, name)
+        unique_texts(rows, name)
+        if len(rows) != spec["count"]:
+            err(f"{name}: expected {spec['count']} rows, got {len(rows)}")
+        if rows:
+            langs = Counter(row.get("lang") for row in rows)
+            print_dist("lang", langs, len(rows))
+            for code, expected in spec.get("langs", {}).items():
+                if langs.get(code, 0) != expected:
+                    err(f"{name}: lang {code} expected {expected}, got {langs.get(code, 0)}")
+        if "ambiguous" in spec:
+            n_amb = sum(1 for row in rows if row.get("ambiguous") is True)
+            print(f"  ambiguous: {n_amb}")
+            if n_amb != spec["ambiguous"]:
+                err(f"{name}: expected {spec['ambiguous']} ambiguous rows, got {n_amb}")
+        if "out_of_scope" in spec:
+            n_oos = sum(1 for row in rows if row.get("out_of_scope") is True)
+            print(f"  out-of-scope answers: {n_oos}")
+            if n_oos != spec["out_of_scope"]:
+                err(f"{name}: expected {spec['out_of_scope']} out-of-scope rows, got {n_oos}")
+        stats = leak_stats(rows, test_rows_by_task.get(spec["task"], []), test_ids)
+        report_files[name] = stats
+        print(
+            f"  leaks: text={stats['text_leaks']} id={stats['id_leaks']} "
+            f"max_similarity={stats['max_similarity']}"
+        )
+        if stats["text_leaks"]:
+            err(f"{name}: {stats['text_leaks']} text leak(s) at ratio >= {LEAK_THRESHOLD}")
+        if stats["id_leaks"]:
+            err(f"{name}: {stats['id_leaks']} id collision(s) with the hand-checked test set")
+
+    report = {
+        "threshold": LEAK_THRESHOLD,
+        "engine": LEAK_ENGINE,
+        "files": report_files,
+    }
+    LEAK_REPORT_PATH.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    print(f"leak_report.json: engine={LEAK_ENGINE} threshold={LEAK_THRESHOLD}")
 
 
 def main() -> int:
@@ -554,12 +751,18 @@ def main() -> int:
             err(f"rsvp household_id not in guests: {missing}")
     validate_info()
     validate_vendors()
-    validate_questions()
-    test_ids = {r["id"] for r in rsvps if isinstance(r.get("id"), str)}
-    test_texts = {r["text"] for r in rsvps if isinstance(r.get("text"), str)}
-    # include songs in collision check
-    test_ids |= {r["id"] for r in songs if isinstance(r.get("id"), str)}
-    validate_generated_placeholders(test_ids, test_texts)
+    questions = validate_questions()
+    test_ids = {
+        row["id"]
+        for group in (rsvps, songs, questions)
+        for row in group
+        if isinstance(row.get("id"), str)
+    }
+    validate_generated(
+        {"rsvp": rsvps, "song": songs, "guest_question": questions},
+        test_ids,
+        households,
+    )
 
     for w in warnings:
         print(f"WARNING: {w}")
