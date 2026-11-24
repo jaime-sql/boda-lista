@@ -45,6 +45,16 @@ test('guest question reaches an error without Firebase config', async ({ page })
   await expect(page.getByRole('alert')).toContainText('Firebase');
 });
 
+test('quick chip answers from the sheet without Firebase config', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Lucía Mendoza');
+  await page.getByRole('button', { name: 'Horario' }).click();
+  await expect(page.getByText(/16:00 Ceremonia \/ Ceremony, Jardín Principal/)).toBeVisible();
+  await expect(page.getByText('En la hoja')).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+});
+
 test('offline state is visible on both routes', async ({ page, context }) => {
   await page.goto('/');
   await context.setOffline(true);

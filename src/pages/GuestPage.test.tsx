@@ -2,6 +2,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+import * as hybrid from '../ai/hybrid';
 import type { AskResult } from '../ai/types';
 import { ToastProvider } from '../components/ToastProvider';
 import { GuestPage, UNSURE_LABEL } from './GuestPage';
@@ -80,5 +81,40 @@ describe('GuestPage', () => {
     expect(await screen.findByText(UNSURE_LABEL)).toBeTruthy();
     expect(UNSURE_LABEL).toBe('Respuesta poco segura');
     expect(screen.getByText('En tu teléfono')).toBeTruthy();
+  });
+
+  it('answers every quick chip from the sheet and never calls the model client', async () => {
+    const user = userEvent.setup();
+    const requestAnswer = vi.fn();
+    const ask = vi.spyOn(hybrid, 'ask');
+    render(
+      <MemoryRouter>
+        <ToastProvider>
+          <GuestPage requestAnswer={requestAnswer} />
+        </ToastProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByRole('heading', { level: 1 });
+    for (const label of ['Horario', 'Lugar', 'Vestimenta', 'Parqueo', 'Regalos', 'Contactos']) {
+      await user.click(screen.getByRole('button', { name: label }));
+    }
+    await user.click(screen.getByRole('button', { name: 'EN' }));
+    for (const label of ['Schedule', 'Venue', 'Dress code', 'Parking', 'Gifts', 'Contacts']) {
+      await user.click(screen.getByRole('button', { name: label }));
+    }
+
+    expect(requestAnswer).not.toHaveBeenCalled();
+    expect(ask).not.toHaveBeenCalled();
+    expect(screen.queryByText('Buscando en la información de la boda…')).toBeNull();
+    expect(screen.queryByText(/Firebase/)).toBeNull();
+    expect(screen.getAllByText('En la hoja').length).toBe(12);
+    expect(screen.queryByText('En la nube')).toBeNull();
+    expect(screen.queryByText('En tu teléfono')).toBeNull();
+    expect(screen.getAllByText(/16:00 Ceremonia \/ Ceremony, Jardín Principal/)).toHaveLength(2);
+    expect(screen.getByText(/The wedding is at Hacienda El Sauce, Km 12.5 Carretera a La Libertad/)).toBeTruthy();
+    expect(screen.getByText(/Cocktail attire. Guayaberas are welcome./)).toBeTruthy();
+    expect(screen.getByText(/Do not park on the highway shoulder./)).toBeTruthy();
+    expect(screen.getByText(/Money envelopes are preferred./)).toBeTruthy();
+    expect(screen.getByText(/Contacts: Elena Castro/)).toBeTruthy();
   });
 });

@@ -1,20 +1,22 @@
 import type { Route } from '../ai/types';
-import { Icon } from './Icon';
+import { Icon, type IconName } from './Icon';
 
-const COPY = {
-  device: 'En tu teléfono',
-  cloud: 'En la nube',
-} as const;
+const COPY: Record<Route, { label: string; icon: IconName; badge: string }> = {
+  device: { label: 'En tu teléfono', icon: 'phone', badge: 'badge-device' },
+  cloud: { label: 'En la nube', icon: 'cloud', badge: 'badge-cloud' },
+  sheet: { label: 'En la hoja', icon: 'info', badge: 'badge-sheet' },
+};
 
 type RouteBadgeProps = {
   route: Route;
 };
 
 export function RouteBadge({ route }: RouteBadgeProps) {
+  const copy = COPY[route];
   return (
-    <span className={`badge badge-${route === 'device' ? 'device' : 'cloud'}`} role="status">
-      <Icon name={route === 'device' ? 'phone' : 'cloud'} size={18} />
-      {COPY[route]}
+    <span className={`badge ${copy.badge}`} role="status">
+      <Icon name={copy.icon} size={18} />
+      {copy.label}
     </span>
   );
 }

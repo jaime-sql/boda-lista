@@ -10,7 +10,7 @@ const listeners = new Set<() => void>();
 let memory: LocalPromptLog | null = null;
 
 function asRoute(value: unknown): Route | null {
-  return value === 'device' || value === 'cloud' ? value : null;
+  return value === 'device' || value === 'cloud' || value === 'sheet' ? value : null;
 }
 
 function asFeature(value: unknown): Feature | null {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { ask } from '../ai/hybrid';
+import { logSheetDecision } from '../ai/sheetLog';
 import type { AskContext, AskResult, Route } from '../ai/types';
 import { probeDeviceModel, type DeviceAvailability } from '../ai/device';
 import { Icon, Izote } from '../components/Icon';
@@ -10,9 +11,11 @@ import { RouteBadge } from '../components/RouteBadge';
 import { useToast } from '../components/ToastProvider';
 import { resolveWeddingInfo } from '../data/loadWeddingInfo';
 import type { WeddingInfo } from '../data/types';
+import { markLastPromptDetails } from '../debug/sessionLog';
 import { getFirebaseProblem } from '../firebase/client';
 import { missingEnv } from '../firebase/config';
-import { UNKNOWN_ANSWER, buildQaSystemPrompt } from '../features/qa/prompt';
+import { CHIP_TOPICS, formatChipAnswer, type ChipTopic } from '../features/qa/chips';
+import { UNKNOWN_ANSWER, buildQaSystemPrompt, parseGuestModelAnswer } from '../features/qa/prompt';
 import {
   calendarUrl,
   ceremonyItem,
@@ -27,8 +30,7 @@ import {
 } from '../features/qa/sheetView';
 import { useOnline } from '../lib/useOnline';
 
-const TOPICS = ['schedule', 'venue', 'dress', 'parking', 'gifts', 'contacts'] as const;
-type Topic = (typeof TOPICS)[number];
+type Topic = ChipTopic;
 
 const TOPIC_ICON = {
   schedule: 'clock',
@@ -210,7 +212,11 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
         feature: 'guest_question',
         system: buildQaSystemPrompt(sheet),
       });
-      const answer = result.text.trim();
+      const parsed = parseGuestModelAnswer(result.text);
+      const answer = parsed.answer.trim();
+      if (parsed.confidence !== null) {
+        markLastPromptDetails({ confidence: parsed.confidence });
+      }
       setTurns((current) => [
         ...current,
         {
@@ -239,6 +245,27 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void submit(question, null);
+  }
+
+  function answerChip(topic: Topic) {
+    if (!sheet || pendingQuestion) return;
+    const questionText = copy.questions[topic];
+    const answer = formatChipAnswer(sheet, topic, lang);
+    setError(null);
+    setActiveTopic(topic);
+    setTurns((current) => [
+      ...current,
+      {
+        question: questionText,
+        topic,
+        answer,
+        route: 'sheet',
+        unknown: answer.length === 0 || isUnknownAnswer(answer),
+        unsure: false,
+      },
+    ]);
+    publish({ title: copy.ready });
+    void logSheetDecision(answer.length);
   }
 
   const ceremony = sheet ? ceremonyItem(sheet) : null;
@@ -386,13 +413,13 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
       <section className="g-quick">
         <h2>{copy.quick}</h2>
         <div className="row wrap gap-2">
-          {TOPICS.map((topic) => (
+          {CHIP_TOPICS.map((topic) => (
             <button
               key={topic}
               type="button"
               className="chip"
               aria-pressed={activeTopic === topic}
-              onClick={() => void submit(copy.questions[topic], topic)}
+              onClick={() => answerChip(topic)}
             >
               <Icon name={TOPIC_ICON[topic]} size={18} />
               {copy.topics[topic]}

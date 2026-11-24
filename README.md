@@ -14,6 +14,7 @@ flowchart TD
   page[Guest question page]
   sheet[Wedding sheet loader]
   cache[localStorage cache]
+  chips[Quick chips]
   ask["ask() in src/ai/hybrid.ts"]
   nano[Gemini Nano on device]
   cloud[Cloud Gemini]
@@ -21,6 +22,9 @@ flowchart TD
   guest --> page
   page --> sheet
   sheet --> cache
+  page --> chips
+  chips --> sheet
+  chips -->|"route sheet, no model"| logs
   page --> ask
   ask -->|"prefer_on_device and model available"| nano
   ask -->|"no model, long input, or low confidence"| cloud
@@ -35,12 +39,12 @@ Each call writes one `prompt_logs` document. The document stores sizes and routi
 | --- | --- |
 | `ts` | UTC ISO timestamp |
 | `feature` | `guest_question`, `rsvp`, or `song` (the `task` values in `data/schema.json`) |
-| `route` | `device` or `cloud` |
+| `route` | `device`, `cloud`, or `sheet` |
 | `fallback_reason` | `no_model`, `low_confidence`, `long_input`, `no_threshold`, `offline_no_threshold`, or null |
 | `latency_ms` | Inference time |
 | `input_chars` | Characters sent to the model |
 | `output_chars` | Characters returned |
-| `model` | `gemini-nano` or the cloud model id |
+| `model` | `gemini-nano`, the cloud model id, or `none` when the route is `sheet` |
 | `confidence` | Caller-supplied number, or null. An RSVP row is updated in this browser with the model's confidence after a valid extraction. |
 | `session_id` | Random id stored in the browser |
 | `edited_by_guest` | RSVP rows only. `false` when the log is written, then `true` in this browser's debug panel if the guest changes the card before sending. |
@@ -58,6 +62,8 @@ The wedding sheet follows `data/schema.json` (`wedding_info`: `synthetic`, `disc
 If the sheet does not cover a question, the only acceptable answer is:
 
 `No tengo esa información, pregúntale a los novios`
+
+Quick-question chips (Horario, Lugar, Vestimenta, Parqueo, Regalos, Contactos, and the English labels Schedule, Venue, Dress code, Parking, Gifts, Contacts) are formatted from the loaded sheet. They do not call Firebase AI Logic, and they still answer when Firebase is not configured. A chip writes a `prompt_logs` row with `route` `sheet` and `model` `none` when Firebase is configured, and the same fields in this browser's session log either way. That row is not an on-device call or a cloud call. `input_chars` is 0 because nothing is sent to a model. A typed question still uses `ask()` and `buildQaSystemPrompt` from `src/features/qa/prompt.ts`. That prompt is the only guest-question prompt: it answers from the sheet, copies times, places, and names as written, keeps the reply to one or two sentences, and returns `{answer, confidence}`.
 
 ## Setup
 

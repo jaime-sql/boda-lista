@@ -42,7 +42,7 @@ function isValidPromptLog(data) {
     && data.ts.size() >= 20
     && data.ts.size() <= 40
     && data.feature in ['guest_question', 'rsvp', 'song']
-    && data.route in ['device', 'cloud']
+    && data.route in ['device', 'cloud', 'sheet']
     && (
       data.fallback_reason == null
       || data.fallback_reason in ['no_model', 'low_confidence', 'long_input', 'no_threshold', 'offline_no_threshold']
