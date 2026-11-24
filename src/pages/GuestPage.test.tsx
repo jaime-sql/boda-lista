@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import * as hybrid from '../ai/hybrid';
+import * as sheetLog from '../ai/sheetLog';
 import type { AskContext, AskResult } from '../ai/types';
 import { ToastProvider } from '../components/ToastProvider';
 import { GuestPage, UNSURE_LABEL } from './GuestPage';
@@ -119,6 +120,7 @@ describe('GuestPage', () => {
     const user = userEvent.setup();
     const requestAnswer = vi.fn();
     const ask = vi.spyOn(hybrid, 'ask');
+    const logged = vi.spyOn(sheetLog, 'logSheetDecision');
     render(
       <MemoryRouter>
         <ToastProvider>
@@ -137,6 +139,8 @@ describe('GuestPage', () => {
 
     expect(requestAnswer).not.toHaveBeenCalled();
     expect(ask).not.toHaveBeenCalled();
+    expect(logged.mock.calls.slice(0, 6).map((call) => call[1])).toEqual(['es', 'es', 'es', 'es', 'es', 'es']);
+    expect(logged.mock.calls.slice(6).map((call) => call[1])).toEqual(['en', 'en', 'en', 'en', 'en', 'en']);
     expect(screen.queryByText('Buscando en la información de la boda…')).toBeNull();
     expect(screen.queryByText(/Firebase/)).toBeNull();
     expect(screen.getAllByText('En la hoja').length).toBe(12);

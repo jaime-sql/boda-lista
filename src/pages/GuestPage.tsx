@@ -281,7 +281,7 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
       },
     ]);
     publish({ title: copy.ready });
-    void logSheetDecision(answer.length);
+    void logSheetDecision(answer.length, lang);
   }
 
   const ceremony = sheet ? ceremonyItem(sheet) : null;

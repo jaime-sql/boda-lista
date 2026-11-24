@@ -46,7 +46,7 @@ Each call writes one `prompt_logs` document. The document stores sizes and routi
 | `output_chars` | Characters returned |
 | `model` | `gemini-nano`, the cloud model id, or JSON `null` when the route is `sheet` |
 | `confidence` | Caller-supplied number, or null. An RSVP row is updated in this browser with the model's confidence after a valid extraction. |
-| `lang` | Typed guest questions only: `es` or `en`, copied from the user turn. Other rows omit it. |
+| `lang` | `es` or `en` on every new row. Typed guest questions use the detected question language. Chips and RSVP use the page locale. Rules still accept older rows that omit it. |
 | `session_id` | Random id stored in the browser |
 | `edited_by_guest` | RSVP rows only. `false` when the log is written, then `true` in this browser's debug panel if the guest changes the card before sending. |
 
@@ -64,7 +64,7 @@ If the sheet does not cover a question, the only acceptable answer is:
 
 `No tengo esa información, pregúntale a los novios`
 
-Quick-question chips (Horario, Lugar, Vestimenta, Parqueo, Regalos, Contactos, and the English labels Schedule, Venue, Dress code, Parking, Gifts, Contacts) are formatted from the loaded sheet. They do not call Firebase AI Logic, and they still answer when Firebase is not configured. A chip writes a `prompt_logs` row with `route` `sheet`, `model` JSON `null`, and `confidence` `null` when Firebase is configured, and the same fields in this browser's session log either way. That row is not an on-device call or a cloud call. `input_chars` is 0 because nothing is sent to a model. A typed question still uses `ask()`. `detectQuestionLanguage` in `src/features/qa/language.ts` chooses `es` or `en` from the question and falls back to the page locale. `buildQaUserTurn` in `src/features/qa/prompt.ts` puts `lang: es` or `lang: en` and an answer-language line on the user turn. `buildQaSystemPrompt` tells the model to answer in that declared language. The same builders are exported from `src/features/qa/qaRequest.js` for `evals/nano_runner`. The prompt log for a typed question stores that `lang`. A missing Spanish fact uses `UNKNOWN_ANSWER`. A missing English fact uses `UNKNOWN_ANSWER_EN`.
+Quick-question chips (Horario, Lugar, Vestimenta, Parqueo, Regalos, Contactos, and the English labels Schedule, Venue, Dress code, Parking, Gifts, Contacts) are formatted from the loaded sheet. They do not call Firebase AI Logic, and they still answer when Firebase is not configured. A chip writes a `prompt_logs` row with `route` `sheet`, `model` JSON `null`, and `confidence` `null` when Firebase is configured, and the same fields in this browser's session log either way. That row is not an on-device call or a cloud call. `input_chars` is 0 because nothing is sent to a model. A typed question still uses `ask()`. `detectQuestionLanguage` in `src/features/qa/language.ts` chooses `es` or `en` from the question and falls back to the page locale. `buildQaUserTurn` in `src/features/qa/prompt.ts` puts `lang: es` or `lang: en` and an answer-language line on the user turn. `buildQaSystemPrompt` tells the model to answer in that declared language. The same builders are exported from `src/features/qa/qaRequest.js` for `evals/nano_runner`. Every new `prompt_logs` row stores `lang`. A typed question stores the detected language. A chip stores the page locale. A missing Spanish fact uses `UNKNOWN_ANSWER`. A missing English fact uses `UNKNOWN_ANSWER_EN`.
 
 ## Setup
 

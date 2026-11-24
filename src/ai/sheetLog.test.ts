@@ -38,7 +38,7 @@ describe('sheet decision log', () => {
   });
 
   it('keeps a local sheet row and skips Firestore when Firebase is absent', async () => {
-    await logSheetDecision(18);
+    await logSheetDecision(18, 'es');
     expect(mocks.writePromptLog).not.toHaveBeenCalled();
     expect(getGenerativeModel).not.toHaveBeenCalled();
     expect(getLastPromptLog()).toMatchObject({
@@ -50,12 +50,13 @@ describe('sheet decision log', () => {
       input_chars: 0,
       output_chars: 18,
       confidence: null,
+      lang: 'es',
     });
   });
 
   it('writes route sheet and model null when Firebase is configured', async () => {
     mocks.missingEnv.mockReturnValue([]);
-    await logSheetDecision(24);
+    await logSheetDecision(24, 'en');
     expect(getGenerativeModel).not.toHaveBeenCalled();
     expect(mocks.writePromptLog).toHaveBeenCalledTimes(1);
     const entry = mocks.writePromptLog.mock.calls[0][0];
@@ -64,6 +65,7 @@ describe('sheet decision log', () => {
       'fallback_reason',
       'feature',
       'input_chars',
+      'lang',
       'latency_ms',
       'model',
       'output_chars',
@@ -80,25 +82,27 @@ describe('sheet decision log', () => {
       output_chars: 24,
       confidence: null,
       latency_ms: 0,
+      lang: 'en',
     });
     expect(JSON.stringify(entry)).toContain('"model":null');
     expect(JSON.stringify(entry)).not.toContain('"none"');
     expect(JSON.stringify(entry)).not.toContain('Horario');
     expect(JSON.stringify(entry)).not.toContain('16:00');
-    expect(getLastPromptLog()).toMatchObject({ id: 'doc-sheet', route: 'sheet', model: null });
+    expect(getLastPromptLog()).toMatchObject({ id: 'doc-sheet', route: 'sheet', model: null, lang: 'en' });
   });
 
   it('still records sheet when the log write fails', async () => {
     mocks.missingEnv.mockReturnValue([]);
     mocks.writePromptLog.mockRejectedValueOnce(new Error('denied'));
-    await logSheetDecision(4);
+    await logSheetDecision(4, 'es');
     expect(getGenerativeModel).not.toHaveBeenCalled();
-    expect(getLastPromptLog()).toMatchObject({ route: 'sheet', model: null, output_chars: 4 });
+    expect(getLastPromptLog()).toMatchObject({ route: 'sheet', model: null, output_chars: 4, lang: 'es' });
   });
 
   it('allows sheet in the prompt_logs rules', () => {
     const rules = readFileSync(join(process.cwd(), 'firestore.rules'), 'utf8');
     expect(rules).toContain("data.route in ['device', 'cloud', 'sheet']");
     expect(rules).toContain("data.route == 'sheet' && data.model == null");
+    expect(rules).toContain("!data.keys().hasAny(['lang']) || data.lang in ['es', 'en']");
   });
 });
