@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { ask } from '../ai/hybrid';
+import { logSheetDecision } from '../ai/sheetLog';
 import type { AskContext, AskResult, Route } from '../ai/types';
 import { probeDeviceModel, type DeviceAvailability } from '../ai/device';
 import { Icon, Izote } from '../components/Icon';
@@ -10,9 +11,18 @@ import { RouteBadge } from '../components/RouteBadge';
 import { useToast } from '../components/ToastProvider';
 import { resolveWeddingInfo } from '../data/loadWeddingInfo';
 import type { WeddingInfo } from '../data/types';
+import { markLastPromptDetails } from '../debug/sessionLog';
 import { getFirebaseProblem } from '../firebase/client';
 import { missingEnv } from '../firebase/config';
-import { UNKNOWN_ANSWER, buildQaSystemPrompt } from '../features/qa/prompt';
+import { CHIP_TOPICS, formatChipAnswer, type ChipTopic } from '../features/qa/chips';
+import { detectQuestionLanguage } from '../features/qa/language';
+import {
+  UNKNOWN_ANSWER,
+  UNKNOWN_ANSWER_EN,
+  buildQaSystemPrompt,
+  buildQaUserTurn,
+  parseGuestModelAnswer,
+} from '../features/qa/prompt';
 import {
   calendarUrl,
   ceremonyItem,
@@ -27,8 +37,7 @@ import {
 } from '../features/qa/sheetView';
 import { useOnline } from '../lib/useOnline';
 
-const TOPICS = ['schedule', 'venue', 'dress', 'parking', 'gifts', 'contacts'] as const;
-type Topic = (typeof TOPICS)[number];
+type Topic = ChipTopic;
 
 const TOPIC_ICON = {
   schedule: 'clock',
@@ -145,8 +154,15 @@ type GuestPageProps = {
   requestAnswer?: (prompt: string, context: AskContext) => Promise<AskResult>;
 };
 
+function refusalPhrase(text: string): string | null {
+  const normalized = text.trim().replace(/\s+/g, ' ');
+  if (normalized === UNKNOWN_ANSWER) return UNKNOWN_ANSWER;
+  if (normalized === UNKNOWN_ANSWER_EN) return UNKNOWN_ANSWER_EN;
+  return null;
+}
+
 function isUnknownAnswer(text: string): boolean {
-  return text.trim().replace(/\s+/g, ' ') === UNKNOWN_ANSWER;
+  return refusalPhrase(text) !== null;
 }
 
 export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
@@ -206,11 +222,17 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
     setPendingQuestion(trimmed);
     setActiveTopic(topic);
     try {
-      const result = await requestAnswer(trimmed, {
+      const questionLang = detectQuestionLanguage(trimmed, lang);
+      const result = await requestAnswer(buildQaUserTurn({ question: trimmed, lang: questionLang, sheet }), {
         feature: 'guest_question',
         system: buildQaSystemPrompt(sheet),
+        lang: questionLang,
       });
-      const answer = result.text.trim();
+      const parsed = parseGuestModelAnswer(result.text);
+      const answer = parsed.answer.trim();
+      if (parsed.confidence !== null) {
+        markLastPromptDetails({ confidence: parsed.confidence });
+      }
       setTurns((current) => [
         ...current,
         {
@@ -239,6 +261,27 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void submit(question, null);
+  }
+
+  function answerChip(topic: Topic) {
+    if (!sheet || pendingQuestion) return;
+    const questionText = copy.questions[topic];
+    const answer = formatChipAnswer(sheet, topic, lang);
+    setError(null);
+    setActiveTopic(topic);
+    setTurns((current) => [
+      ...current,
+      {
+        question: questionText,
+        topic,
+        answer,
+        route: 'sheet',
+        unknown: answer.length === 0 || isUnknownAnswer(answer),
+        unsure: false,
+      },
+    ]);
+    publish({ title: copy.ready });
+    void logSheetDecision(answer.length, lang);
   }
 
   const ceremony = sheet ? ceremonyItem(sheet) : null;
@@ -315,8 +358,8 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
               <div className="bubble-q">{turn.question}</div>
               {turn.unknown ? (
                 <div className="bubble-a bubble-idk">
-                  {turn.unsure ? <p className="unsure-label">{UNSURE_LABEL}</p> : null}
-                  <h2 className="display">{UNKNOWN_ANSWER}</h2>
+                  {turn.route !== 'sheet' && turn.unsure ? <p className="unsure-label">{UNSURE_LABEL}</p> : null}
+                  <h2 className="display">{refusalPhrase(turn.answer) ?? UNKNOWN_ANSWER}</h2>
                   <p>{copy.idkBody}</p>
                   <div className="stack gap-2 idk-actions">
                     {coupleLink ? (
@@ -341,16 +384,16 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
                     </button>
                   </div>
                   <div className="foot">
-                    <RouteBadge route={turn.route} />
+                    <RouteBadge route={turn.route} lang={lang} />
                     <span className="sm muted">{copy.noSource}</span>
                   </div>
                 </div>
               ) : (
                 <div className="bubble-a">
-                  {turn.unsure ? <p className="unsure-label">{UNSURE_LABEL}</p> : null}
+                  {turn.route !== 'sheet' && turn.unsure ? <p className="unsure-label">{UNSURE_LABEL}</p> : null}
                   <p>{turn.answer}</p>
                   <div className="foot">
-                    <RouteBadge route={turn.route} />
+                    <RouteBadge route={turn.route} lang={lang} />
                     <span className="sm muted">
                       {source ? `${copy.source}: ${source}` : copy.noSource}
                     </span>
@@ -386,13 +429,13 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
       <section className="g-quick">
         <h2>{copy.quick}</h2>
         <div className="row wrap gap-2">
-          {TOPICS.map((topic) => (
+          {CHIP_TOPICS.map((topic) => (
             <button
               key={topic}
               type="button"
               className="chip"
               aria-pressed={activeTopic === topic}
-              onClick={() => void submit(copy.questions[topic], topic)}
+              onClick={() => answerChip(topic)}
             >
               <Icon name={TOPIC_ICON[topic]} size={18} />
               {copy.topics[topic]}

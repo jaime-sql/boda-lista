@@ -1,7 +1,7 @@
 export const FEATURES = ['guest_question', 'rsvp', 'song'] as const;
 
 export type Feature = (typeof FEATURES)[number];
-export type Route = 'device' | 'cloud';
+export type Route = 'device' | 'cloud' | 'sheet';
 export type FallbackReason =
   | 'no_model'
   | 'low_confidence'
@@ -18,9 +18,10 @@ export interface PromptLog {
   latency_ms: number;
   input_chars: number;
   output_chars: number;
-  model: string;
+  model: string | null;
   confidence: number | null;
   session_id: string;
+  lang?: 'es' | 'en';
   edited_by_guest?: boolean;
 }
 
@@ -29,6 +30,7 @@ export interface AskContext {
   system?: string;
   confidence?: number | null;
   forceCloud?: boolean;
+  lang?: 'es' | 'en';
 }
 
 export interface AskResult {

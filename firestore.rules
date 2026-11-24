@@ -35,6 +35,7 @@ function isValidPromptLog(data) {
       'model',
       'confidence',
       'session_id',
+      'lang',
       'edited_by_guest'
     ])
     && (!data.keys().hasAny(['edited_by_guest']) || data.edited_by_guest is bool)
@@ -42,7 +43,7 @@ function isValidPromptLog(data) {
     && data.ts.size() >= 20
     && data.ts.size() <= 40
     && data.feature in ['guest_question', 'rsvp', 'song']
-    && data.route in ['device', 'cloud']
+    && data.route in ['device', 'cloud', 'sheet']
     && (
       data.fallback_reason == null
       || data.fallback_reason in ['no_model', 'low_confidence', 'long_input', 'no_threshold', 'offline_no_threshold']
@@ -56,10 +57,16 @@ function isValidPromptLog(data) {
     && data.output_chars is int
     && data.output_chars >= 0
     && data.output_chars <= 200000
-    && data.model is string
-    && data.model.size() > 0
-    && data.model.size() <= 80
+    && (
+      (data.route == 'sheet' && data.model == null)
+      || (
+        data.model is string
+        && data.model.size() > 0
+        && data.model.size() <= 80
+      )
+    )
     && (data.confidence == null || data.confidence is number)
+    && (!data.keys().hasAny(['lang']) || data.lang in ['es', 'en'])
     && data.session_id is string
     && data.session_id.size() >= 8
     && data.session_id.size() <= 80;

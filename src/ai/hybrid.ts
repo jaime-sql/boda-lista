@@ -34,6 +34,11 @@ function composePrompt(prompt: string, system?: string): string {
   return `${system}\n\n${prompt}`;
 }
 
+function loggedLang(context: AskContext): { lang: 'es' | 'en' } | Record<string, never> {
+  if (context.lang === 'es' || context.lang === 'en') return { lang: context.lang };
+  return {};
+}
+
 async function safeLog(entry: PromptLog): Promise<void> {
   try {
     const id = await writePromptLog(entry);
@@ -141,6 +146,7 @@ export async function ask(prompt: string, context: AskContext): Promise<AskResul
       model: modelName,
       confidence,
       session_id: sessionId,
+      ...loggedLang(context),
       ...(context.feature === 'rsvp' ? { edited_by_guest: false } : {}),
     });
     return {
@@ -167,6 +173,7 @@ export async function ask(prompt: string, context: AskContext): Promise<AskResul
       model: route === 'device' ? ON_DEVICE_MODEL_NAME : cloudModel,
       confidence,
       session_id: sessionId,
+      ...loggedLang(context),
       ...(context.feature === 'rsvp' ? { edited_by_guest: false } : {}),
     });
     throw error;
