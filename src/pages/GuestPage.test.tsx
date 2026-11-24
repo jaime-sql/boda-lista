@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import type { AskResult } from '../ai/types';
 import { ToastProvider } from '../components/ToastProvider';
+import * as firebaseConfig from '../firebase/config';
 import { GuestPage, UNSURE_LABEL } from './GuestPage';
 
 function deferred() {
@@ -16,6 +17,7 @@ function deferred() {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
 });
 
 describe('GuestPage', () => {
@@ -80,5 +82,35 @@ describe('GuestPage', () => {
     expect(await screen.findByText(UNSURE_LABEL)).toBeTruthy();
     expect(UNSURE_LABEL).toBe('Respuesta poco segura');
     expect(screen.getByText('En tu teléfono')).toBeTruthy();
+  });
+
+  it('shows a guest-friendly error and logs the missing env name', async () => {
+    const user = userEvent.setup();
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(firebaseConfig, 'missingEnv').mockReturnValue(['VITE_APPCHECK_SITE_KEY']);
+    const requestAnswer = vi.fn(async () => {
+      throw new Error('firebase-config-missing');
+    });
+    render(
+      <MemoryRouter>
+        <ToastProvider>
+          <GuestPage requestAnswer={requestAnswer} />
+        </ToastProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByRole('heading', { level: 1 });
+    await user.type(screen.getByLabelText('Tu pregunta'), '¿A qué hora es la ceremonia?');
+    await user.click(screen.getByRole('button', { name: 'Enviar' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('No pudimos responder ahora. Intenta de nuevo en un momento.');
+    expect(alert.textContent).not.toContain('VITE_');
+    expect(alert.textContent).not.toContain('Firebase');
+    expect(alert.textContent).not.toContain('variables de entorno');
+    expect(errorSpy).toHaveBeenCalledWith('Firebase disabled: missing VITE_APPCHECK_SITE_KEY');
+
+    await user.click(screen.getByRole('button', { name: 'EN' }));
+    expect(screen.getByRole('alert').textContent).toContain(
+      "We couldn't answer right now. Please try again in a moment.",
+    );
   });
 });

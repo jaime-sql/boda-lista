@@ -10,9 +10,8 @@ import { RouteBadge } from '../components/RouteBadge';
 import { useToast } from '../components/ToastProvider';
 import { resolveWeddingInfo } from '../data/loadWeddingInfo';
 import type { WeddingInfo } from '../data/types';
-import { getFirebaseProblem } from '../firebase/client';
-import { missingEnv } from '../firebase/config';
 import { UNKNOWN_ANSWER, buildQaSystemPrompt } from '../features/qa/prompt';
+import { GUEST_FAILURE, logGuestFailure } from '../lib/guestFailure';
 import {
   calendarUrl,
   ceremonyItem,
@@ -78,9 +77,6 @@ const COPY = {
     confirmTab: 'Confirmar',
     detailsTab: 'Detalles',
     later: 'Esa parte llega después.',
-    errorTitle: 'No pudimos responder',
-    errorBody: 'Inténtalo de nuevo en un momento.',
-    missing: 'Falta la configuración de Firebase. Revisa las variables de entorno.',
     sheetError: 'No se pudo abrir la hoja de la boda.',
     ready: 'Respuesta lista',
   },
@@ -122,9 +118,6 @@ const COPY = {
     confirmTab: 'RSVP',
     detailsTab: 'Details',
     later: 'That part comes later.',
-    errorTitle: 'We could not answer',
-    errorBody: 'Try again in a moment.',
-    missing: 'Firebase is not configured. Check the environment variables.',
     sheetError: 'The wedding sheet could not be opened.',
     ready: 'Answer ready',
   },
@@ -161,7 +154,7 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [activeTopic, setActiveTopic] = useState<Topic | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   const [device, setDevice] = useState<DeviceAvailability | null>(null);
 
   useEffect(() => {
@@ -202,7 +195,7 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
   async function submit(text: string, topic: Topic | null) {
     const trimmed = text.trim();
     if (!trimmed || !sheet) return;
-    setError(null);
+    setFailed(false);
     setPendingQuestion(trimmed);
     setActiveTopic(topic);
     try {
@@ -225,12 +218,10 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
       setQuestion('');
       publish({ title: copy.ready });
     } catch (caught) {
-      const missing =
-        (caught instanceof Error && caught.message === 'firebase-config-missing') ||
-        missingEnv().length > 0 ||
-        getFirebaseProblem() === 'missing';
-      setError(missing ? copy.missing : copy.errorBody);
-      publish({ title: copy.errorTitle, description: missing ? copy.missing : copy.errorBody });
+      logGuestFailure(caught);
+      setFailed(true);
+      const failure = GUEST_FAILURE[lang];
+      publish({ title: failure.title, description: failure.body });
     } finally {
       setPendingQuestion(null);
     }
@@ -375,10 +366,10 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
             </div>
           </div>
         ) : null}
-        {error ? (
+        {failed ? (
           <div className="banner banner-danger" role="alert">
             <div>
-              <b>{copy.errorTitle}.</b> {error}
+              <b>{GUEST_FAILURE[lang].title}.</b> {GUEST_FAILURE[lang].body}
             </div>
           </div>
         ) : null}

@@ -108,20 +108,30 @@ Pushing to `main` runs `.github/workflows/firebase-hosting.yml`. It deploys to t
 
 Pull requests run `.github/workflows/firebase-hosting-preview.yml`. It publishes a preview channel per PR, expires the channel after 7 days, and comments the preview URL. It sets `VITE_ENABLE_DEBUG=true` for that build. It skips the same way when the Firebase secrets are missing.
 
-Optional build secrets, used when present: `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`, `VITE_FIREBASE_MEASUREMENT_ID`, `VITE_APPCHECK_SITE_KEY`, and `VITE_GEMINI_CLOUD_MODEL`.
+The guest build needs these repository secrets. The workflow injects them as `VITE_*` at build time. Do not commit the values.
+
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID` (if this secret is empty, the workflow copies `FIREBASE_PROJECT_ID`)
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
+- `VITE_APPCHECK_SITE_KEY` — the reCAPTCHA Enterprise site key from Firebase App Check
+
+Before `npm run build`, the deploy workflow prints a `::warning::` annotation with the names of any of those variables that are still empty. It does not print values, and it does not fail the build. Optional build secrets, used when present: `VITE_FIREBASE_MEASUREMENT_ID` and `VITE_GEMINI_CLOUD_MODEL`.
 
 ## Environment variables
 
 | Variable | Purpose |
 | --- | --- |
-| `VITE_FIREBASE_API_KEY` | Web app config |
-| `VITE_FIREBASE_AUTH_DOMAIN` | Web app config |
-| `VITE_FIREBASE_PROJECT_ID` | Web app config |
-| `VITE_FIREBASE_STORAGE_BUCKET` | Web app config |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Web app config |
-| `VITE_FIREBASE_APP_ID` | Web app config |
+| `VITE_FIREBASE_API_KEY` | Required repo secret. Web app config |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Required repo secret. Web app config |
+| `VITE_FIREBASE_PROJECT_ID` | Required repo secret. Web app config |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Required repo secret. Web app config |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Required repo secret. Web app config |
+| `VITE_FIREBASE_APP_ID` | Required repo secret. Web app config |
 | `VITE_FIREBASE_MEASUREMENT_ID` | Optional Analytics id |
-| `VITE_APPCHECK_SITE_KEY` | reCAPTCHA Enterprise site key |
+| `VITE_APPCHECK_SITE_KEY` | Required repo secret. reCAPTCHA Enterprise site key from Firebase App Check |
 | `VITE_APPCHECK_DEBUG_TOKEN` | Local App Check debug token, or `true` |
 | `VITE_USE_EMULATORS` | `true` to use Auth and Firestore emulators |
 | `VITE_GEMINI_CLOUD_MODEL` | Optional. Default `gemini-3.5-flash-lite` |
