@@ -56,9 +56,14 @@ function isValidPromptLog(data) {
     && data.output_chars is int
     && data.output_chars >= 0
     && data.output_chars <= 200000
-    && data.model is string
-    && data.model.size() > 0
-    && data.model.size() <= 80
+    && (
+      (data.route == 'sheet' && data.model == null)
+      || (
+        data.model is string
+        && data.model.size() > 0
+        && data.model.size() <= 80
+      )
+    )
     && (data.confidence == null || data.confidence is number)
     && data.session_id is string
     && data.session_id.size() >= 8

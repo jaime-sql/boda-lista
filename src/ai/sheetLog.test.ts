@@ -45,7 +45,7 @@ describe('sheet decision log', () => {
       id: 'sheet-local',
       feature: 'guest_question',
       route: 'sheet',
-      model: 'none',
+      model: null,
       fallback_reason: null,
       input_chars: 0,
       output_chars: 18,
@@ -53,7 +53,7 @@ describe('sheet decision log', () => {
     });
   });
 
-  it('writes route sheet and model none when Firebase is configured', async () => {
+  it('writes route sheet and model null when Firebase is configured', async () => {
     mocks.missingEnv.mockReturnValue([]);
     await logSheetDecision(24);
     expect(getGenerativeModel).not.toHaveBeenCalled();
@@ -74,16 +74,18 @@ describe('sheet decision log', () => {
     expect(entry).toMatchObject({
       feature: 'guest_question',
       route: 'sheet',
-      model: 'none',
+      model: null,
       fallback_reason: null,
       input_chars: 0,
       output_chars: 24,
       confidence: null,
       latency_ms: 0,
     });
+    expect(JSON.stringify(entry)).toContain('"model":null');
+    expect(JSON.stringify(entry)).not.toContain('"none"');
     expect(JSON.stringify(entry)).not.toContain('Horario');
     expect(JSON.stringify(entry)).not.toContain('16:00');
-    expect(getLastPromptLog()).toMatchObject({ id: 'doc-sheet', route: 'sheet', model: 'none' });
+    expect(getLastPromptLog()).toMatchObject({ id: 'doc-sheet', route: 'sheet', model: null });
   });
 
   it('still records sheet when the log write fails', async () => {
@@ -91,11 +93,12 @@ describe('sheet decision log', () => {
     mocks.writePromptLog.mockRejectedValueOnce(new Error('denied'));
     await logSheetDecision(4);
     expect(getGenerativeModel).not.toHaveBeenCalled();
-    expect(getLastPromptLog()).toMatchObject({ route: 'sheet', model: 'none', output_chars: 4 });
+    expect(getLastPromptLog()).toMatchObject({ route: 'sheet', model: null, output_chars: 4 });
   });
 
   it('allows sheet in the prompt_logs rules', () => {
     const rules = readFileSync(join(process.cwd(), 'firestore.rules'), 'utf8');
     expect(rules).toContain("data.route in ['device', 'cloud', 'sheet']");
+    expect(rules).toContain("data.route == 'sheet' && data.model == null");
   });
 });

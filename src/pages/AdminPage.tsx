@@ -205,7 +205,7 @@ export function AdminPage() {
                   <dt>output_chars</dt>
                   <dd>{log.output_chars}</dd>
                   <dt>model</dt>
-                  <dd>{log.model}</dd>
+                  <dd>{log.model === null ? 'null' : log.model}</dd>
                   <dt>confidence</dt>
                   <dd>{log.confidence === null ? 'null' : log.confidence}</dd>
                   <dt>session_id</dt>

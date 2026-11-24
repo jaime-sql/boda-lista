@@ -15,7 +15,12 @@ import { markLastPromptDetails } from '../debug/sessionLog';
 import { getFirebaseProblem } from '../firebase/client';
 import { missingEnv } from '../firebase/config';
 import { CHIP_TOPICS, formatChipAnswer, type ChipTopic } from '../features/qa/chips';
-import { UNKNOWN_ANSWER, buildQaSystemPrompt, parseGuestModelAnswer } from '../features/qa/prompt';
+import {
+  UNKNOWN_ANSWER,
+  UNKNOWN_ANSWER_EN,
+  buildQaSystemPrompt,
+  parseGuestModelAnswer,
+} from '../features/qa/prompt';
 import {
   calendarUrl,
   ceremonyItem,
@@ -147,8 +152,15 @@ type GuestPageProps = {
   requestAnswer?: (prompt: string, context: AskContext) => Promise<AskResult>;
 };
 
+function refusalPhrase(text: string): string | null {
+  const normalized = text.trim().replace(/\s+/g, ' ');
+  if (normalized === UNKNOWN_ANSWER) return UNKNOWN_ANSWER;
+  if (normalized === UNKNOWN_ANSWER_EN) return UNKNOWN_ANSWER_EN;
+  return null;
+}
+
 function isUnknownAnswer(text: string): boolean {
-  return text.trim().replace(/\s+/g, ' ') === UNKNOWN_ANSWER;
+  return refusalPhrase(text) !== null;
 }
 
 export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
@@ -343,7 +355,7 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
               {turn.unknown ? (
                 <div className="bubble-a bubble-idk">
                   {turn.unsure ? <p className="unsure-label">{UNSURE_LABEL}</p> : null}
-                  <h2 className="display">{UNKNOWN_ANSWER}</h2>
+                  <h2 className="display">{refusalPhrase(turn.answer) ?? UNKNOWN_ANSWER}</h2>
                   <p>{copy.idkBody}</p>
                   <div className="stack gap-2 idk-actions">
                     {coupleLink ? (

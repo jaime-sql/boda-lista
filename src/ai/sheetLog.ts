@@ -5,7 +5,6 @@ import { getSessionId } from '../lib/session';
 import type { PromptLog } from './types';
 
 export const SHEET_ROUTE = 'sheet' as const;
-export const SHEET_MODEL = 'none';
 
 export function sheetPromptLog(outputChars: number, sessionId = getSessionId()): PromptLog {
   return {
@@ -16,7 +15,7 @@ export function sheetPromptLog(outputChars: number, sessionId = getSessionId()):
     latency_ms: 0,
     input_chars: 0,
     output_chars: Math.max(0, Math.round(outputChars)),
-    model: SHEET_MODEL,
+    model: null,
     confidence: null,
     session_id: sessionId,
   };

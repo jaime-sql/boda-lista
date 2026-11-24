@@ -18,7 +18,7 @@ export interface PromptLog {
   latency_ms: number;
   input_chars: number;
   output_chars: number;
-  model: string;
+  model: string | null;
   confidence: number | null;
   session_id: string;
   edited_by_guest?: boolean;

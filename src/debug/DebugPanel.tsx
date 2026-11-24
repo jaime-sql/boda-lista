@@ -113,7 +113,7 @@ export function DebugPanel() {
             <dt>output_chars</dt>
             <dd>{lastLog.output_chars}</dd>
             <dt>model</dt>
-            <dd>{lastLog.model}</dd>
+            <dd>{lastLog.model === null ? 'null' : lastLog.model}</dd>
             <dt>confidence</dt>
             <dd>{lastLog.confidence === null ? 'null' : lastLog.confidence}</dd>
             <dt>session_id</dt>

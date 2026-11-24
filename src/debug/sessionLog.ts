@@ -42,9 +42,9 @@ function sanitize(value: unknown): LocalPromptLog | null {
   const fallback = asFallback(raw.fallback_reason);
   if (typeof raw.id !== 'string' || raw.id.length === 0) return null;
   if (!feature || !route || fallback === undefined) return null;
-  if (typeof raw.ts !== 'string' || typeof raw.model !== 'string' || typeof raw.session_id !== 'string') {
-    return null;
-  }
+  if (typeof raw.ts !== 'string' || typeof raw.session_id !== 'string') return null;
+  if (raw.model !== null && (typeof raw.model !== 'string' || raw.model.length === 0)) return null;
+  if (route !== 'sheet' && typeof raw.model !== 'string') return null;
   if (
     typeof raw.latency_ms !== 'number' ||
     typeof raw.input_chars !== 'number' ||

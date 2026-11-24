@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import sample from '../../data/wedding_info.sample.json';
 import type { WeddingInfo } from '../../data/types';
-import { UNKNOWN_ANSWER, buildQaSystemPrompt, parseGuestModelAnswer } from './prompt';
+import { UNKNOWN_ANSWER, UNKNOWN_ANSWER_EN, buildQaSystemPrompt, parseGuestModelAnswer } from './prompt';
 
 describe('guest prompt', () => {
   it('uses the exact out-of-scope sentence and the sample sheet', () => {
@@ -15,6 +15,16 @@ describe('guest prompt', () => {
     expect(prompt).toContain('Jardín El Ejemplo');
     expect(prompt).toContain('Calle Falsa 123');
     expect(prompt).not.toContain('force');
+  });
+
+  it('answers and refuses in the same language as the question', () => {
+    expect(UNKNOWN_ANSWER_EN).toBe("I don't have that information, ask the couple");
+    const prompt = buildQaSystemPrompt(sample as WeddingInfo);
+    expect(prompt).toContain('Responde en el mismo idioma de la pregunta del invitado.');
+    expect(prompt).toContain('Si la pregunta está en inglés, answer va en inglés.');
+    expect(prompt).toContain('Si la pregunta está en español, answer va en español.');
+    expect(prompt).toContain(UNKNOWN_ANSWER);
+    expect(prompt).toContain(UNKNOWN_ANSWER_EN);
   });
 
   it('reads the answer object and leaves plain text alone', () => {

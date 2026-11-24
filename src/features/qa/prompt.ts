@@ -1,6 +1,7 @@
 import type { WeddingInfo } from '../../data/types';
 
 export const UNKNOWN_ANSWER = 'No tengo esa información, pregúntale a los novios';
+export const UNKNOWN_ANSWER_EN = "I don't have that information, ask the couple";
 
 /** Typed guest questions return this object. Quick chips do not. */
 export const GUEST_QUESTION_OUTPUT_SHAPE = '{answer, confidence}' as const;
@@ -17,10 +18,11 @@ export function buildQaSystemPrompt(info: WeddingInfo): string {
     'Copia las horas, los lugares y los nombres textualmente, tal como están escritos en la hoja.',
     'No infieras ni añadas detalles que la hoja no dice.',
     'No uses conocimiento externo y no inventes datos.',
-    'Si la persona pregunta en inglés y la hoja tiene el hecho, responde en inglés.',
-    'Si pregunta en español, responde en español.',
-    `Si el hecho no está en la hoja, answer es exactamente esta frase y nada más: ${UNKNOWN_ANSWER}`,
-    'Esa frase va sola dentro de answer, sin traducción y sin una segunda oración. Es la única respuesta válida cuando falte información, también si la pregunta está en inglés.',
+    'Responde en el mismo idioma de la pregunta del invitado.',
+    'Si la pregunta está en inglés, answer va en inglés. Si la pregunta está en español, answer va en español.',
+    `Si el hecho no está en la hoja y la pregunta está en español, answer es exactamente esta frase y nada más: ${UNKNOWN_ANSWER}`,
+    `Si el hecho no está en la hoja y la pregunta está en inglés, answer es exactamente esta frase y nada más: ${UNKNOWN_ANSWER_EN}`,
+    'La frase de rechazo va sola dentro de answer, sin traducción y sin una segunda oración.',
     `Devuelve únicamente un objeto JSON con la forma ${GUEST_QUESTION_OUTPUT_SHAPE} y ninguna clave extra.`,
     'answer es el texto de una o dos oraciones. confidence es un número entre 0 y 1.',
     'Hoja de información JSON:',
