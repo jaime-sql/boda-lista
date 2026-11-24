@@ -1039,164 +1039,196 @@ def question_facts(info: dict) -> list[dict]:
     coordinator = _contact(info, "coordinadora")
     family = _contact(info, "familia")
 
-    def when(item: dict, english: bool) -> str:
-        note = f" {item['notes']}" if item.get("notes") else ""
-        if english:
-            return f"{item['title']} is at {item['time']} in {item['place']}.{note}"
-        return f"{item['title']} es a las {item['time']} en {item['place']}.{note}"
+    def require_source(blob: str, snippet: str) -> None:
+        if snippet not in blob:
+            raise SystemExit(f"info sheet is missing {snippet!r}")
 
-    def person(contact: dict, english: bool) -> str:
-        bits = f"{contact['name']}, {contact['role']}, {contact['email']}, {contact['phone']}"
-        if english:
-            return f"The contact is {bits}."
-        return f"La persona de contacto es {bits}."
+    info_blob = json.dumps(info, ensure_ascii=False)
+    require_source(info_blob, ceremony["time"])
+    require_source(info_blob, ceremony["place"])
+    require_source(info_blob, "hombro de la carretera")
+    require_source(info_blob, "highway shoulder")
+    require_source(venue["notes"], drive)
+    require_source(venue["notes"], rain)
+    require_source(info_blob, "25-minute")
+    require_source(info_blob, "covered backup hall")
+    require_source(info_blob, "Agua y café de bienvenida")
+    require_source(info_blob, "cada 20 minutos")
+    require_source(info_blob, "estacionamiento norte")
+    require_source(park["details"], "15:00")
+    require_source(close.get("notes", "") + park["details"], "01:15")
+    dress_summary = dress["summary"].rstrip(".")
+    require_source(dress["details"], "guayabera formal")
+    require_source(dress["details"], "blanco, ivory ni crema")
+    require_source(dress["details"], "zapatos cómodos")
+    require_source(dress["notes"], "Cocktail attire")
+    require_source(dress["notes"], "white, ivory or cream")
+    require_source(gifts["summary"].lower(), "lluvia de sobres")
+    require_source(gifts["details"], "mesa de regalos pública")
+    require_source(gifts["details"], "viaje de novios")
+    require_source(gifts["notes"], "Money envelopes")
+    require_source(gifts["notes"], "no public gift registry")
 
     return [
         {
             "q_es": "¿a qué hora empieza la ceremonia y en qué parte de la hacienda es?",
             "q_en": "what time does the ceremony start, and where on the property is it?",
-            "a_es": when(ceremony, False),
-            "a_en": when(ceremony, True),
-            "need": ceremony["time"],
+            "a_es": f"La ceremonia es a las {ceremony['time']} en el {ceremony['place']}.",
+            "a_en": f"The ceremony is at {ceremony['time']} in the {ceremony['place']}.",
+            "facts_es": [ceremony["time"], ceremony["place"]],
+            "facts_en": [ceremony["time"], ceremony["place"]],
         },
         {
             "q_es": "¿cómo se llaman los novios, qué fecha tiene la boda y cuál es la zona horaria?",
             "q_en": "what are the couple's names, the wedding date, and the time zone?",
-            "a_es": f"Los novios son {couple}. La fecha es {info['date']} y la zona horaria es {info['timezone']}.",
-            "a_en": f"The couple is {couple_en}. The date is {info['date']} and the time zone is {info['timezone']}.",
-            "need": info["date"],
+            "a_es": f"Los novios son {couple}, la fecha es {info['date']} y la zona horaria es {info['timezone']}.",
+            "a_en": f"The couple is {couple_en}, the date is {info['date']}, and the time zone is {info['timezone']}.",
+            "facts_es": [bride["first_name"] + " " + bride["last_name"], groom["first_name"] + " " + groom["last_name"], info["date"], info["timezone"]],
+            "facts_en": [bride["first_name"] + " " + bride["last_name"], groom["first_name"] + " " + groom["last_name"], info["date"], info["timezone"]],
         },
         {
             "q_es": "¿cuál es el nombre del lugar, la dirección, la ciudad y el país?",
             "q_en": "what is the venue name, street address, city, and country?",
-            "a_es": (
-                f"La boda es en {venue['name']}, {venue['address']}, {venue['city']}, {venue['country']}. "
-                f"La ceremonia es en {venue['ceremony_area']} y la recepción en {venue['reception_area']}."
-            ),
-            "a_en": (
-                f"The wedding is at {venue['name']}, {venue['address']}, {venue['city']}, {venue['country']}. "
-                f"The ceremony is in {venue['ceremony_area']} and the reception is in {venue['reception_area']}."
-            ),
-            "need": venue["address"],
+            "a_es": f"El lugar es {venue['name']}, {venue['address']}, {venue['city']}, {venue['country']}.",
+            "a_en": f"The venue is {venue['name']}, {venue['address']}, {venue['city']}, {venue['country']}.",
+            "facts_es": [venue["name"], venue["address"], venue["city"], venue["country"]],
+            "facts_en": [venue["name"], venue["address"], venue["city"], venue["country"]],
         },
         {
             "q_es": "¿cuál es el código de vestimenta completo?",
             "q_en": "what is the full dress code?",
-            "a_es": f"Código de vestimenta: {dress['summary']} {dress['details']}",
-            "a_en": f"Dress code: {dress['summary']} {dress['notes']}",
-            "need": dress["summary"],
+            "a_es": f"El código de vestimenta es {dress_summary}: vestido de cóctel o traje o guayabera formal, sin blanco, ivory ni crema, y zapatos cómodos.",
+            "a_en": "The dress code is cocktail attire: a cocktail dress, suit, or formal guayabera, no white, ivory, or cream, and comfortable shoes.",
+            "facts_es": [dress_summary, "guayabera", "blanco", "ivory", "crema", "zapatos cómodos"],
+            "facts_en": ["cocktail", "guayabera", "white", "ivory", "cream", "comfortable shoes"],
         },
         {
             "q_es": "¿se puede ir con guayabera formal?",
             "q_en": "is a formal guayabera acceptable?",
-            "a_es": f"Sí. {dress['details']} {dress['notes']}",
-            "a_en": f"Yes. {dress['notes']}",
-            "need": "guayabera" if "guayabera" in (dress["details"] + dress["notes"]).lower() else dress["notes"],
+            "a_es": "Sí, se puede ir con guayabera formal.",
+            "a_en": "Yes, a formal guayabera is welcome.",
+            "facts_es": ["Sí", "guayabera formal"],
+            "facts_en": ["Yes", "guayabera"],
         },
         {
             "q_es": "¿está permitido el blanco, el ivory o el crema?",
             "q_en": "are white, ivory, or cream allowed?",
-            "a_es": f"No. {dress['details']}",
-            "a_en": f"No. {dress['notes']}",
-            "need": "ivory",
+            "a_es": "No, no se puede usar blanco, ivory ni crema.",
+            "a_en": "No, white, ivory, and cream are not allowed.",
+            "facts_es": ["No", "blanco", "ivory", "crema"],
+            "facts_en": ["No", "white", "ivory", "cream"],
         },
         {
             "q_es": "¿a qué hora es el pastel y en qué salón?",
             "q_en": "what time is the cake, and in which room?",
-            "a_es": when(cake, False),
-            "a_en": when(cake, True),
-            "need": cake["time"],
+            "a_es": f"El pastel es a las {cake['time']} en el {cake['place']}.",
+            "a_en": f"The cake is at {cake['time']} in the {cake['place']}.",
+            "facts_es": [cake["time"], cake["place"]],
+            "facts_en": [cake["time"], cake["place"]],
         },
         {
             "q_es": "¿a qué hora es el baile de los novios y dónde?",
             "q_en": "what time is the first dance, and where?",
-            "a_es": when(dance, False),
-            "a_en": when(dance, True),
-            "need": dance["time"],
+            "a_es": f"El baile de los novios es a las {dance['time']} en el {dance['place']}.",
+            "a_en": f"The first dance is at {dance['time']} in the {dance['place']}.",
+            "facts_es": [dance["time"], dance["place"]],
+            "facts_en": [dance["time"], dance["place"]],
         },
         {
             "q_es": "¿a qué hora empieza el cóctel y en qué terraza?",
             "q_en": "what time does the cocktail hour start, and on which terrace?",
-            "a_es": when(cocktail, False),
-            "a_en": when(cocktail, True),
-            "need": cocktail["time"],
+            "a_es": f"El cóctel empieza a las {cocktail['time']} en la {cocktail['place']}.",
+            "a_en": f"The cocktail hour starts at {cocktail['time']} on the {cocktail['place']}.",
+            "facts_es": [cocktail["time"], cocktail["place"]],
+            "facts_en": [cocktail["time"], cocktail["place"]],
         },
         {
             "q_es": "¿a qué hora es la cena y en qué salón?",
             "q_en": "what time is dinner, and in which room?",
-            "a_es": when(dinner, False),
-            "a_en": when(dinner, True),
-            "need": dinner["time"],
+            "a_es": f"La cena es a las {dinner['time']} en el {dinner['place']}.",
+            "a_en": f"Dinner is at {dinner['time']} in the {dinner['place']}.",
+            "facts_es": [dinner["time"], dinner["place"]],
+            "facts_en": [dinner["time"], dinner["place"]],
         },
         {
             "q_es": "¿a qué hora es la llegada de invitados y hay algo de bienvenida?",
             "q_en": "what time should guests arrive, and is there a welcome?",
-            "a_es": when(arrival, False),
-            "a_en": when(arrival, True),
-            "need": arrival["time"],
+            "a_es": f"La llegada es a las {arrival['time']} en el {arrival['place']}, con agua y café de bienvenida.",
+            "a_en": f"Guests arrive at {arrival['time']} at the {arrival['place']}, with welcome water and coffee.",
+            "facts_es": [arrival["time"], arrival["place"], "agua y café"],
+            "facts_en": [arrival["time"], arrival["place"], "water and coffee"],
         },
         {
             "q_es": "¿a qué hora cierra la fiesta?",
             "q_en": "what time does the party end?",
-            "a_es": when(close, False),
-            "a_en": when(close, True),
-            "need": close["time"],
+            "a_es": f"La fiesta cierra a la {close['time']}.",
+            "a_en": f"The party ends at {close['time']}.",
+            "facts_es": [close["time"]],
+            "facts_en": [close["time"]],
         },
         {
             "q_es": "¿quién es el contacto de la familia y cómo se le escribe o se le llama?",
             "q_en": "who is the family contact, and how do we reach them?",
-            "a_es": person(family, False),
-            "a_en": person(family, True),
-            "need": family["email"],
+            "a_es": f"El contacto de la familia es {family['name']}, {family['email']}, {family['phone']}.",
+            "a_en": f"The family contact is {family['name']}, {family['email']}, {family['phone']}.",
+            "facts_es": [family["name"], family["email"], family["phone"]],
+            "facts_en": [family["name"], family["email"], family["phone"]],
         },
         {
             "q_es": "¿hay valet, de dónde sale el shuttle y cada cuánto pasa?",
             "q_en": "is there valet, where does the shuttle leave from, and how often does it run?",
-            "a_es": f"{park['summary']} {park['details']}",
-            "a_en": f"{park['summary']} {park['details']}",
-            "need": park["summary"],
+            "a_es": "Sí hay valet gratuito desde las 15:00, y el shuttle sale del estacionamiento norte del Centro Comercial El Encuentro cada 20 minutos.",
+            "a_en": "Yes, free valet starts at 15:00, and the shuttle leaves from the north lot of Centro Comercial El Encuentro every 20 minutes.",
+            "facts_es": ["Sí", "15:00", "estacionamiento norte", "Centro Comercial El Encuentro", "20 minutos"],
+            "facts_en": ["Yes", "15:00", "Centro Comercial El Encuentro", "20 minutes"],
         },
         {
             "q_es": "¿a qué hora sale el último shuttle de regreso?",
             "q_en": "what time does the last shuttle back leave?",
-            "a_es": f"{close.get('notes', '')} {park['notes']}",
-            "a_en": f"{park['notes']} {close.get('notes', '')}",
-            "need": "01:15" if "01:15" in (close.get("notes", "") + park["notes"]) else park["notes"],
+            "a_es": "El último shuttle de regreso sale a la 01:15.",
+            "a_en": "The last shuttle back leaves at 01:15.",
+            "facts_es": ["01:15"],
+            "facts_en": ["01:15"],
         },
         {
             "q_es": "¿se puede dejar el carro en el hombro de la carretera?",
             "q_en": "can we park on the highway shoulder?",
-            "a_es": f"No. {park['details']} {park['notes']}",
-            "a_en": f"No. {park['notes']}",
-            "need": park["notes"],
+            "a_es": "No, no se puede estacionar en el hombro de la carretera.",
+            "a_en": "No, you can't park on the highway shoulder.",
+            "facts_es": ["No", "hombro de la carretera"],
+            "facts_en": ["No", "highway shoulder"],
         },
         {
             "q_es": "¿qué prefieren de regalo y hay mesa de regalos o se puede aportar al viaje?",
             "q_en": "what gift do they prefer, is there a registry, and can we contribute to the trip?",
-            "a_es": f"{gifts['summary']} {gifts['details']}",
-            "a_en": f"{gifts['summary']} {gifts['notes']} {gifts['details']}",
-            "need": gifts["summary"],
+            "a_es": "Prefieren una lluvia de sobres, no hay mesa de regalos pública y sí se puede aportar al viaje de novios.",
+            "a_en": "They prefer money envelopes, there is no public gift registry, and yes, you can contribute to the honeymoon.",
+            "facts_es": ["lluvia de sobres", "no hay mesa de regalos", "viaje de novios"],
+            "facts_en": ["money envelopes", "no public gift registry", "honeymoon"],
         },
         {
             "q_es": "¿qué pasa con la ceremonia si llueve?",
             "q_en": "what happens to the ceremony if it rains?",
-            "a_es": f"Según la hoja: {rain}.",
-            "a_en": f"{rain}.",
-            "need": rain,
+            "a_es": "Si llueve, hay un salón cubierto de respaldo.",
+            "a_en": "If it rains, a covered backup hall is available.",
+            "facts_es": ["llueve", "salón cubierto"],
+            "facts_en": ["rains", "covered backup hall"],
         },
         {
             "q_es": "¿cuánto se tarda del centro de Santa Tecla a la hacienda?",
             "q_en": "how long is the drive from central Santa Tecla to the venue?",
-            "a_es": f"Según la hoja: {drive}.",
-            "a_en": f"{drive}.",
-            "need": drive,
+            "a_es": "Del centro de Santa Tecla a la hacienda son 25 minutos.",
+            "a_en": "The drive from central Santa Tecla to the venue is 25 minutes.",
+            "facts_es": ["Santa Tecla", "25 minutos"],
+            "facts_en": ["Santa Tecla", "25 minutes"],
         },
         {
             "q_es": "¿quién es la coordinadora y cómo se le contacta?",
             "q_en": "who is the wedding coordinator, and how do we contact her?",
-            "a_es": person(coordinator, False),
-            "a_en": person(coordinator, True),
-            "need": coordinator["phone"],
+            "a_es": f"La coordinadora es {coordinator['name']}, {coordinator['email']}, {coordinator['phone']}.",
+            "a_en": f"The coordinator is {coordinator['name']}, {coordinator['email']}, {coordinator['phone']}.",
+            "facts_es": [coordinator["name"], coordinator["email"], coordinator["phone"]],
+            "facts_en": [coordinator["name"], coordinator["email"], coordinator["phone"]],
         },
     ]
 
@@ -1267,13 +1299,18 @@ def build_questions(info: dict, sheet: str, norms: list[str], max_test_len: int)
         raise SystemExit(f"expected 20 in-scope facts, got {len(facts)}")
     rows = []
     for fact in facts:
-        if fact["need"] not in fact["a_es"] and fact["need"] not in fact["a_en"]:
-            raise SystemExit(f"answer dropped source fact {fact['need']!r}")
+        for lang, answer_key, fact_key in (("es", "a_es", "facts_es"), ("en", "a_en", "facts_en")):
+            answer = fact[answer_key]
+            if not answer.endswith(".") or ". " in answer or " / " in answer or UNKNOWN_ANSWER in answer:
+                raise SystemExit(f"gold answer is not one scoped sentence: {answer!r}")
+            for bit in fact[fact_key]:
+                if bit not in answer:
+                    raise SystemExit(f"{lang} answer missing {bit!r}: {answer!r}")
         for frame in FRAMES_ES:
             text = ensure_long(frame.format(q=fact["q_es"]), "es", max_test_len)
-            rows.append(_qa(text, "es", fact["a_es"], False))
+            rows.append(_qa(text, "es", fact["a_es"], False, fact["facts_es"]))
         text = ensure_long(FRAME_EN.format(q=fact["q_en"]), "en", max_test_len)
-        rows.append(_qa(text, "en", fact["a_en"], False))
+        rows.append(_qa(text, "en", fact["a_en"], False, fact["facts_en"]))
     if len(OOS_STEMS) != 40:
         raise SystemExit(f"expected 40 out-of-scope stems, got {len(OOS_STEMS)}")
     for lang, stem in OOS_STEMS:
@@ -1293,8 +1330,8 @@ def build_questions(info: dict, sheet: str, norms: list[str], max_test_len: int)
     return rows
 
 
-def _qa(text: str, lang: str, answer: str, out_of_scope: bool) -> dict:
-    return {
+def _qa(text: str, lang: str, answer: str, out_of_scope: bool, gold_facts: list[str] | None = None) -> dict:
+    row = {
         "id": "",
         "split": "dev",
         "task": "guest_question",
@@ -1303,6 +1340,11 @@ def _qa(text: str, lang: str, answer: str, out_of_scope: bool) -> dict:
         "answer": answer,
         "out_of_scope": out_of_scope,
     }
+    if not out_of_scope:
+        if not gold_facts:
+            raise SystemExit("in-scope question is missing gold_facts")
+        row["gold_facts"] = list(gold_facts)
+    return row
 
 
 def assign_ids(rows: list[dict], prefix: str) -> None:

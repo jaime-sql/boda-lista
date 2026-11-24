@@ -75,7 +75,7 @@ No model was used, so there is no model license. Modal was not used because its 
 python tools/data/generate_dev.py
 ```
 
-In-scope guest answers are interpolated from `data/wedding_info.json`, and the same strings are present in `data/info_sheet.md`. Out-of-scope answers are exactly `No tengo esa información, pregúntale a los novios`. In-scope answers never use that phrase.
+In-scope guest answers are interpolated from `data/wedding_info.json`, and the same strings are present in `data/info_sheet.md`. Gold answers are minimal, question-scoped, in the question's language. Out-of-scope answers are exactly `No tengo esa información, pregúntale a los novios`. In-scope answers never use that phrase.
 
 | File | Rows | Split | es | en | Other |
 |---|---:|---|---:|---:|---|

@@ -113,7 +113,13 @@
         "text": { "type": "string", "minLength": 1 },
         "lang": { "type": "string", "enum": ["es", "en"] },
         "answer": { "type": "string", "minLength": 1 },
-        "out_of_scope": { "type": "boolean" }
+        "out_of_scope": { "type": "boolean" },
+        "gold_facts": {
+          "description": "Optional atomic facts (yes/no, time, number, or place) that an in-scope answer must contain. Omitted on out-of-scope rows.",
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
       },
       "if": {
         "properties": { "out_of_scope": { "const": true } },
