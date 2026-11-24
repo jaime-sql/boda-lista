@@ -11,6 +11,7 @@ question.
 
 from __future__ import annotations
 
+import json
 import re
 import unicodedata
 from collections import Counter
@@ -77,6 +78,18 @@ def facts_match(prediction: str | None, gold: str | None) -> bool:
     return all(token in predicted for token in number_time_tokens(gold))
 
 
+def _object_from_raw(raw: str) -> dict[str, Any] | None:
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start < 0 or end <= start:
+        return None
+    try:
+        value = json.loads(raw[start : end + 1])
+    except json.JSONDecodeError:
+        return None
+    return value if isinstance(value, dict) else None
+
+
 def answer_text(prediction: dict[str, Any] | None) -> str:
     if not prediction:
         return ""
@@ -87,14 +100,25 @@ def answer_text(prediction: dict[str, Any] | None) -> str:
             if isinstance(value, str) and value.strip():
                 return value
     raw = prediction.get("raw")
-    return raw if isinstance(raw, str) else ""
+    if isinstance(raw, str):
+        parsed = _object_from_raw(raw)
+        if parsed and isinstance(parsed.get("answer"), str) and parsed["answer"].strip():
+            return parsed["answer"]
+        return raw
+    return ""
 
 
 def answer_confidence(prediction: dict[str, Any] | None) -> float | None:
     if not prediction:
         return None
     output = prediction.get("output") if isinstance(prediction.get("output"), dict) else {}
-    candidates = [output.get("confidence") if output else None, prediction.get("confidence")]
+    raw = prediction.get("raw")
+    parsed = _object_from_raw(raw) if isinstance(raw, str) else None
+    candidates = [
+        output.get("confidence") if output else None,
+        parsed.get("confidence") if parsed else None,
+        prediction.get("confidence"),
+    ]
     for value in candidates:
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             continue

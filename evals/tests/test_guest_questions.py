@@ -3,6 +3,8 @@ from pathlib import Path
 
 import pytest
 
+from evals.score import score_predictions
+
 from evals.guest_questions import (
     UNKNOWN_ANSWER,
     facts_match,
@@ -129,3 +131,83 @@ def test_guest_selection_does_not_open_test_rows(tmp_path, monkeypatch):
     scored = score_guest_questions(rows, preds)
     assert scored["by_split"]["dev"]["n"] == 25
     assert scored["hallucination_rate"] == 0.0
+
+
+def test_nano_guest_prediction_jsonl_scores_without_test_split():
+    phrase = "No tengo esa información, pregúntale a los novios"
+    golds = [
+        {
+            "id": "fake-dev-time",
+            "split": "dev",
+            "task": "guest_question",
+            "text": "A que hora es la ceremonia?",
+            "lang": "es",
+            "answer": "La ceremonia es a las 16:00.",
+            "out_of_scope": False,
+        },
+        {
+            "id": "fake-dev-unknown",
+            "split": "dev",
+            "task": "guest_question",
+            "text": "Cual es el menu secreto?",
+            "lang": "es",
+            "answer": phrase,
+            "out_of_scope": True,
+        },
+    ]
+    predictions = [
+        {
+            "id": "fake-dev-time",
+            "task": "guest_question",
+            "split": "dev",
+            "lang": "es",
+            "ok": True,
+            "error": None,
+            "confidence": 0.91,
+            "latency_ms": 12,
+            "inference_source": "ON_DEVICE",
+            "output": {"answer": "La ceremonia es a las 16:00.", "confidence": 0.91},
+            "raw": json.dumps({"answer": "La ceremonia es a las 16:00.", "confidence": 0.91}),
+        },
+        {
+            "id": "fake-dev-unknown",
+            "task": "guest_question",
+            "split": "dev",
+            "lang": "es",
+            "ok": True,
+            "error": None,
+            "confidence": None,
+            "latency_ms": 8,
+            "inference_source": "ON_DEVICE",
+            "output": None,
+            "raw": json.dumps({"answer": phrase + ".", "confidence": 0.4}),
+        },
+    ]
+    summary = score_predictions(golds, predictions, backend="nano", smoke=True)
+    guest = summary["guest_question"]
+    assert set(guest["by_split"]) == {"dev"}
+    assert guest["n"] == 2
+    assert guest["in_scope_correctness"] == 1.0
+    assert guest["refusal_recall"] == 1.0
+    assert guest["hallucination_rate"] == 0.0
+    assert guest["by_split"]["dev"]["n_refusal"] == 1
+    page = Path("evals/nano_runner/index.html").read_text(encoding="utf-8")
+    prompt = Path("src/features/qa/prompt.ts").read_text(encoding="utf-8")
+    for line in (
+        "Eres el asistente de invitados de una boda.",
+        "Responde únicamente con datos que aparecen en la hoja de información JSON.",
+        "No uses conocimiento externo y no inventes datos.",
+        "Si la persona pregunta en inglés y la hoja tiene la respuesta, responde en inglés.",
+        "Si pregunta en español, responde en español.",
+        "Sin comillas, sin traducción y sin una segunda oración.",
+        "Hoja de información JSON:",
+    ):
+        assert line in prompt
+        assert line in page
+    assert phrase in page
+    assert 'row.task === "guest_question"' in page
+    assert "unexpected_cloud_fallback" in page
+    assert "ONLY_ON_DEVICE" in page
+    assert "ONLY_IN_CLOUD" in page
+    assert "appCheckDebugToken || true" not in page
+    assert '{"answer": string, "confidence": number 0..1}' in page

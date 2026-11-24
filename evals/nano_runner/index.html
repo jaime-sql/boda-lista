@@ -29,6 +29,7 @@
     <legend>Inputs</legend>
     <label>JSONL set <input id="dataFile" type="file" accept=".jsonl,application/jsonl,.json" /></label>
     <label>Prompt file, if fetch fails <input id="promptFile" type="file" accept="application/json,.json" /></label>
+    <label>Wedding sheet, if fetch fails <input id="sheetFile" type="file" accept="application/json,.json" /></label>
     <label>Firebase config <input id="configFile" type="file" accept="application/json,.json" /></label>
     <label><input type="radio" name="mode" value="device" checked /> On-device only (Nano)</label>
     <label><input type="radio" name="mode" value="cloud" /> Cloud only</label>
@@ -75,6 +76,28 @@
       return rows;
     }
 
+    // Locked phrase and wording copied from src/features/qa/prompt.ts.
+    const UNKNOWN_ANSWER = "No tengo esa información, pregúntale a los novios";
+
+    function buildQaSystemPrompt(info) {
+      return [
+        "Eres el asistente de invitados de una boda.",
+        "Responde únicamente con datos que aparecen en la hoja de información JSON.",
+        "No uses conocimiento externo y no inventes datos.",
+        "Si la persona pregunta en inglés y la hoja tiene la respuesta, responde en inglés.",
+        "Si pregunta en español, responde en español.",
+        `Si la hoja no cubre la pregunta, responde exactamente esta frase y nada más: ${UNKNOWN_ANSWER}`,
+        "Sin comillas, sin traducción y sin una segunda oración. Esa frase es la única respuesta válida cuando falte información, también si la pregunta está en inglés.",
+        "Hoja de información JSON:",
+        JSON.stringify(info),
+      ].join("\n");
+    }
+
+    // Same join as src/ai/hybrid.ts composePrompt, then the eval JSON fields.
+    function buildGuestPrompt(info, item) {
+      return `${buildQaSystemPrompt(info)}\n\n${item.text}\n\n{"answer": string, "confidence": number 0..1}`;
+    }
+
     // Same four-part join as evals/prompting.py: system, instruction, schema, user_template.
     function buildPrompt(spec, item) {
       const taskSpec = spec.tasks[item.task];
@@ -117,6 +140,60 @@
       return value;
     }
 
+    const GUEST_OUTPUT_SCHEMA = {
+      type: "object",
+      properties: {
+        answer: { type: "string" },
+        confidence: { type: "number" },
+      },
+      required: ["answer", "confidence"],
+    };
+
+    function isWeddingSheet(value) {
+      return Boolean(
+        value &&
+        value.synthetic === true &&
+        value.couple &&
+        value.venue &&
+        typeof value.date === "string"
+      );
+    }
+
+    async function loadWeddingInfo() {
+      const picked = document.querySelector("#sheetFile").files[0];
+      if (picked) {
+        const sheet = JSON.parse(await readFile(picked));
+        if (!isWeddingSheet(sheet)) throw new Error("That file is not the wedding sheet.");
+        return sheet;
+      }
+      const urls = [
+        new URL("../../data/wedding_info.json", window.location.href),
+        new URL("../../src/data/wedding_info.sample.json", window.location.href),
+      ];
+      for (const url of urls) {
+        try {
+          const response = await fetch(url);
+          if (!response.ok) continue;
+          const sheet = await response.json();
+          if (isWeddingSheet(sheet)) return sheet;
+        } catch (_error) {
+          // Try the app's sample sheet next.
+        }
+      }
+      throw new Error("Could not load the wedding sheet. Pick data/wedding_info.json.");
+    }
+
+    function applyAppCheckDebug(config) {
+      const token = config.appCheckDebugToken;
+      if (token === true || token === "true") {
+        self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+        return;
+      }
+      if (typeof token === "string" && token.trim()) {
+        self.FIREBASE_APPCHECK_DEBUG_TOKEN = token.trim();
+      }
+    }
+
     async function loadPromptSpec() {
       const picked = document.querySelector("#promptFile").files[0];
       if (picked) return JSON.parse(await readFile(picked));
@@ -138,8 +215,9 @@
       const modeName = document.querySelector("input[name=mode]:checked").value;
       const onDevice = modeName === "device";
       try {
-        const spec = await loadPromptSpec();
-        const items = parseJsonl(await readFile(dataFile)).filter((row) => row.task === "rsvp" || row.task === "song");
+        const items = parseJsonl(await readFile(dataFile)).filter((row) => row.task === "rsvp" || row.task === "song" || row.task === "guest_question");
+        const spec = items.some((row) => row.task !== "guest_question") ? await loadPromptSpec() : null;
+        const sheet = items.some((row) => row.task === "guest_question") ? await loadWeddingInfo() : null;
         const config = JSON.parse(await readFile(configFile));
         const firebaseConfig = {
           apiKey: config.apiKey,
@@ -149,7 +227,7 @@
           messagingSenderId: config.messagingSenderId,
           appId: config.appId,
         };
-        self.FIREBASE_APPCHECK_DEBUG_TOKEN = config.appCheckDebugToken || true;
+        applyAppCheckDebug(config);
         const app = initializeApp(firebaseConfig, "boda-lista-evals-" + modeName);
         if (config.appCheckSiteKey) {
           initializeAppCheck(app, {
@@ -194,9 +272,11 @@
             inference_source: null,
           };
           try {
-            const taskSchema = toGeminiSchema(spec.tasks[item.task].output_schema);
+            const guest = item.task === "guest_question";
+            const taskSchema = guest ? GUEST_OUTPUT_SCHEMA : toGeminiSchema(spec.tasks[item.task].output_schema);
+            const promptText = guest ? buildGuestPrompt(sheet, item) : buildPrompt(spec, item);
             const result = await model.generateContent({
-              contents: [{ role: "user", parts: [{ text: buildPrompt(spec, item) }] }],
+              contents: [{ role: "user", parts: [{ text: promptText }] }],
               generationConfig: {
                 temperature: 0,
                 responseMimeType: "application/json",

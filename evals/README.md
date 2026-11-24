@@ -65,7 +65,7 @@ Nano and cloud, on the owner's laptop. Copy `evals/nano_runner/firebase-config.e
 python -m http.server 8765
 ```
 
-Open `http://localhost:8765/evals/nano_runner/index.html` in desktop Chrome 139 or newer. Enable `chrome://flags/#prompt-api-for-gemini-nano-multimodal-input` for on-device mode. Pick the JSONL, the prompt file if fetch fails, and the Firebase config. Leave **On-device only** selected for Nano (`InferenceMode.ONLY_ON_DEVICE`). Switch to **Cloud only** for cloud Gemini (`ONLY_IN_CLOUD`). The Run button calls `initializeDeviceModel` on a click, then writes a predictions JSONL. If on-device mode reports an in-cloud source, the row is stored as `unexpected_cloud_fallback` and is not counted as Nano.
+Open `http://localhost:8765/evals/nano_runner/index.html` in desktop Chrome 139 or newer. Enable `chrome://flags/#prompt-api-for-gemini-nano-multimodal-input` for on-device mode. Pick the JSONL, the prompt file if fetch fails, and the Firebase config. Leave **On-device only** selected for Nano (`InferenceMode.ONLY_ON_DEVICE`). Switch to **Cloud only** for cloud Gemini (`ONLY_IN_CLOUD`). The Run button calls `initializeDeviceModel` on a click, then writes a predictions JSONL. If on-device mode reports an in-cloud source, the row is stored as `unexpected_cloud_fallback` and is not counted as Nano. `guest_question` rows use the app guest prompt (`src/features/qa/prompt.ts`) plus the wedding sheet and return `{"answer": string, "confidence": number 0..1}`.
 
 Threshold selection uses dev rows only. Until `data/rsvp_dev_generated.jsonl` exists, this command refuses to run:
 
