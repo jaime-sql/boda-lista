@@ -281,7 +281,7 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
             {venueLine(sheet)}
           </p>
           <div className="row gap-2 g-hero-actions">
-            <a className="btn btn-secondary" href={calendarUrl(sheet)} target="_blank" rel="noreferrer">
+            <a className="btn btn-secondary" href={calendarUrl(sheet, lang)} target="_blank" rel="noreferrer">
               <Icon name="cal" />
               {copy.calendar}
             </a>
@@ -303,7 +303,7 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
         ) : null}
         {showCloudBanner ? (
           <div className="banner banner-info" role="status">
-            <Icon name="info" size={22} />
+            <Icon name="info" size={18} />
             <div>{copy.cloudBanner}</div>
           </div>
         ) : null}
