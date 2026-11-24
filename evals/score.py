@@ -18,7 +18,7 @@ from typing import Any
 
 from rapidfuzz import fuzz
 
-from evals.guest_questions import score_guest_questions
+from evals.guest_questions import format_guest_metric_line, score_guest_questions
 from evals.loader import load_paths
 from evals.parsing import resolve_prediction
 from evals.pricing import cost_per_thousand
@@ -461,6 +461,9 @@ def main() -> None:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"wrote {args.out} backend={backend} n={summary['n']} smoke={summary['smoke']}")
+    guest_line = format_guest_metric_line(summary.get("guest_question"))
+    if guest_line:
+        print(guest_line)
 
 
 if __name__ == "__main__":

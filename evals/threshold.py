@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from evals.guest_questions import answer_confidence, answer_text, is_hallucination
+from evals.guest_questions import answer_confidence, answer_text, format_guest_metric_line, is_hallucination
 from evals.parsing import resolve_prediction
 from evals.score import index_predictions, item_correct, load_predictions, score_predictions
 
@@ -423,6 +423,9 @@ def build_hybrid_summary(
         "song": {key: value for key, value in song.items() if key not in {"test_items", "test_predictions"}},
     }
     summary["cost_basis"] = "hybrid cost is not estimated; on-device calls are free and cloud tokens are uncounted"
+    guest_test = guest.get("test")
+    if isinstance(guest_test, dict) and "n" in guest_test:
+        summary["guest_question"] = guest_test
     return summary
 
 
@@ -545,6 +548,9 @@ def main() -> None:
     rsvp_threshold = summary["routing"]["rsvp"].get("threshold")
     print(f"wrote {args.out} rsvp_threshold={rsvp_threshold} song={song_status}")
     print(f"wrote {config_path}")
+    guest_line = format_guest_metric_line(summary.get("guest_question"))
+    if guest_line:
+        print(guest_line)
 
 
 if __name__ == "__main__":
