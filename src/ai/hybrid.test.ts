@@ -121,6 +121,15 @@ describe('ask', () => {
     expect(JSON.stringify(getLastPromptLog())).not.toContain(PROMPT);
   });
 
+  it('logs the declared lang for a typed guest question', async () => {
+    await ask('What time is the ceremony?', { feature: 'guest_question', lang: 'en' });
+    const payload = mocks.addDoc.mock.calls[0][1] ?? {};
+    expect(payload.lang).toBe('en');
+    expect(payload.feature).toBe('guest_question');
+    expect(JSON.stringify(payload)).not.toContain('What time');
+    expect(getLastPromptLog()?.lang).toBe('en');
+  });
+
   it('answers on device offline when no threshold is set', async () => {
     setOnline(false);
     mocks.generateContent.mockResolvedValue({

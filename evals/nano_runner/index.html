@@ -21,8 +21,10 @@
   <p>
     Desktop Chrome on this laptop. On-device mode calls Firebase AI Logic with
     <code>InferenceMode.ONLY_ON_DEVICE</code> (Gemini Nano). Cloud mode uses
-    <code>ONLY_IN_CLOUD</code>. The prompt is
+    <code>ONLY_IN_CLOUD</code>. RSVP and song prompts are
     <code>evals/prompts/extract.json</code>, the same file Gemma uses.
+    Guest questions use <code>buildQaSystemPrompt</code> and <code>buildQaUserTurn</code>
+    from <code>src/features/qa/qaRequest.js</code>.
     Firebase config stays in a local untracked file.
   </p>
   <fieldset>
@@ -44,6 +46,7 @@
     <tbody id="rows"></tbody>
   </table>
   <script type="module">
+    import { buildQaSystemPrompt, buildQaUserTurn, detectQuestionLanguage } from "../../src/features/qa/qaRequest.js";
     import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
     import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app-check.js";
     import { getAI, getGenerativeModel, GoogleAIBackend, InferenceMode } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-ai.js";
@@ -76,26 +79,17 @@
       return rows;
     }
 
-    // Locked phrase and wording copied from src/features/qa/prompt.ts.
-    const UNKNOWN_ANSWER = "No tengo esa información, pregúntale a los novios";
-
-    function buildQaSystemPrompt(info) {
-      return [
-        "Eres el asistente de invitados de una boda.",
-        "Responde únicamente con datos que aparecen en la hoja de información JSON.",
-        "No uses conocimiento externo y no inventes datos.",
-        "Si la persona pregunta en inglés y la hoja tiene la respuesta, responde en inglés.",
-        "Si pregunta en español, responde en español.",
-        `Si la hoja no cubre la pregunta, responde exactamente esta frase y nada más: ${UNKNOWN_ANSWER}`,
-        "Sin comillas, sin traducción y sin una segunda oración. Esa frase es la única respuesta válida cuando falte información, también si la pregunta está en inglés.",
-        "Hoja de información JSON:",
-        JSON.stringify(info),
-      ].join("\n");
+    function guestQuestionLang(item) {
+      if (item.lang === "en" || item.lang === "es") return item.lang;
+      return detectQuestionLanguage(item.text || "", "es");
     }
 
     // Same join as src/ai/hybrid.ts composePrompt, then the eval JSON fields.
     function buildGuestPrompt(info, item) {
-      return `${buildQaSystemPrompt(info)}\n\n${item.text}\n\n{"answer": string, "confidence": number 0..1}`;
+      const lang = guestQuestionLang(item);
+      const system = buildQaSystemPrompt(info);
+      const user = buildQaUserTurn({ question: item.text || "", lang, sheet: info });
+      return `${system}\n\n${user}\n\n{"answer": string, "confidence": number 0..1}`;
     }
 
     // Same four-part join as evals/prompting.py: system, instruction, schema, user_template.

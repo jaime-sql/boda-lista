@@ -15,10 +15,12 @@ import { markLastPromptDetails } from '../debug/sessionLog';
 import { getFirebaseProblem } from '../firebase/client';
 import { missingEnv } from '../firebase/config';
 import { CHIP_TOPICS, formatChipAnswer, type ChipTopic } from '../features/qa/chips';
+import { detectQuestionLanguage } from '../features/qa/language';
 import {
   UNKNOWN_ANSWER,
   UNKNOWN_ANSWER_EN,
   buildQaSystemPrompt,
+  buildQaUserTurn,
   parseGuestModelAnswer,
 } from '../features/qa/prompt';
 import {
@@ -220,9 +222,11 @@ export function GuestPage({ requestAnswer = ask }: GuestPageProps) {
     setPendingQuestion(trimmed);
     setActiveTopic(topic);
     try {
-      const result = await requestAnswer(trimmed, {
+      const questionLang = detectQuestionLanguage(trimmed, lang);
+      const result = await requestAnswer(buildQaUserTurn({ question: trimmed, lang: questionLang, sheet }), {
         feature: 'guest_question',
         system: buildQaSystemPrompt(sheet),
+        lang: questionLang,
       });
       const parsed = parseGuestModelAnswer(result.text);
       const answer = parsed.answer.trim();

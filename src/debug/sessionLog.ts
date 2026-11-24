@@ -54,6 +54,7 @@ function sanitize(value: unknown): LocalPromptLog | null {
   }
   const confidence = raw.confidence;
   if (confidence !== null && typeof confidence !== 'number') return null;
+  if ('lang' in raw && raw.lang !== 'es' && raw.lang !== 'en') return null;
   if ('edited_by_guest' in raw && typeof raw.edited_by_guest !== 'boolean') return null;
   return {
     id: raw.id,
@@ -67,6 +68,7 @@ function sanitize(value: unknown): LocalPromptLog | null {
     model: raw.model,
     confidence,
     session_id: raw.session_id,
+    ...(raw.lang === 'es' || raw.lang === 'en' ? { lang: raw.lang } : {}),
     ...(typeof raw.edited_by_guest === 'boolean' ? { edited_by_guest: raw.edited_by_guest } : {}),
   };
 }

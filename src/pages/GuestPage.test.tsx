@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import * as hybrid from '../ai/hybrid';
-import type { AskResult } from '../ai/types';
+import type { AskContext, AskResult } from '../ai/types';
 import { ToastProvider } from '../components/ToastProvider';
 import { GuestPage, UNSURE_LABEL } from './GuestPage';
 
@@ -23,7 +23,7 @@ describe('GuestPage', () => {
   it('shows the sheet, the searching state, and the real route', async () => {
     const user = userEvent.setup();
     const pending = deferred();
-    const requestAnswer = vi.fn(() => pending.promise);
+    const requestAnswer = vi.fn((_prompt: string, _context: AskContext) => pending.promise);
     render(
       <MemoryRouter>
         <ToastProvider>
@@ -55,6 +55,38 @@ describe('GuestPage', () => {
     expect(await screen.findByText('En la nube')).toBeTruthy();
     expect(screen.getByText('La ceremonia es a las 16:00.')).toBeTruthy();
     expect(screen.queryByText(UNSURE_LABEL)).toBeNull();
+    const userTurn = String(requestAnswer.mock.calls[0]?.[0]);
+    expect(userTurn).toContain('lang: es');
+    expect(userTurn).toContain('Idioma de respuesta: español');
+    expect(requestAnswer.mock.calls[0]?.[1]).toMatchObject({ feature: 'guest_question', lang: 'es' });
+  });
+
+  it('marks an English question with lang en even when the page is Spanish and the question names a place', async () => {
+    const user = userEvent.setup();
+    const requestAnswer = vi.fn(async (_prompt: string, _context: AskContext) => ({
+      text: 'The ceremony is at 16:00.',
+      route: 'cloud' as const,
+      fallbackReason: 'no_threshold' as const,
+      latencyMs: 8,
+      inputChars: 40,
+      outputChars: 28,
+      model: 'gemini-3.5-flash-lite',
+    }));
+    render(
+      <MemoryRouter>
+        <ToastProvider>
+          <GuestPage requestAnswer={requestAnswer} />
+        </ToastProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByRole('heading', { level: 1 });
+    await user.type(screen.getByLabelText('Tu pregunta'), 'What time is the ceremony at Salón El Encanto?');
+    await user.click(screen.getByRole('button', { name: 'Enviar' }));
+    const userTurn = String(requestAnswer.mock.calls[0]?.[0]);
+    expect(userTurn).toContain('lang: en');
+    expect(userTurn).toContain('Answer language: English');
+    expect(userTurn).toContain('Salón El Encanto');
+    expect(requestAnswer.mock.calls[0]?.[1]).toMatchObject({ lang: 'en' });
   });
 
   it('labels an offline answer with no threshold', async () => {

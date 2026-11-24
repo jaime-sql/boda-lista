@@ -114,6 +114,12 @@ export function DebugPanel() {
             <dd>{lastLog.output_chars}</dd>
             <dt>model</dt>
             <dd>{lastLog.model === null ? 'null' : lastLog.model}</dd>
+            {lastLog.lang ? (
+              <>
+                <dt>lang</dt>
+                <dd>{lastLog.lang}</dd>
+              </>
+            ) : null}
             <dt>confidence</dt>
             <dd>{lastLog.confidence === null ? 'null' : lastLog.confidence}</dd>
             <dt>session_id</dt>

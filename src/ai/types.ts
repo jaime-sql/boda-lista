@@ -21,6 +21,7 @@ export interface PromptLog {
   model: string | null;
   confidence: number | null;
   session_id: string;
+  lang?: 'es' | 'en';
   edited_by_guest?: boolean;
 }
 
@@ -29,6 +30,7 @@ export interface AskContext {
   system?: string;
   confidence?: number | null;
   forceCloud?: boolean;
+  lang?: 'es' | 'en';
 }
 
 export interface AskResult {

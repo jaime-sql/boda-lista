@@ -192,19 +192,13 @@ def test_nano_guest_prediction_jsonl_scores_without_test_split():
     assert guest["hallucination_rate"] == 0.0
     assert guest["by_split"]["dev"]["n_refusal"] == 1
     page = Path("evals/nano_runner/index.html").read_text(encoding="utf-8")
-    prompt = Path("src/features/qa/prompt.ts").read_text(encoding="utf-8")
-    for line in (
-        "Eres el asistente de invitados de una boda.",
-        "Responde únicamente con datos que aparecen en la hoja de información JSON.",
-        "No uses conocimiento externo y no inventes datos.",
-        "Si la persona pregunta en inglés y la hoja tiene la respuesta, responde en inglés.",
-        "Si pregunta en español, responde en español.",
-        "Sin comillas, sin traducción y sin una segunda oración.",
-        "Hoja de información JSON:",
-    ):
-        assert line in prompt
-        assert line in page
-    assert phrase in page
+    prompt = Path("src/features/qa/qaRequest.js").read_text(encoding="utf-8")
+    assert "src/features/qa/qaRequest.js" in page
+    assert "buildQaSystemPrompt" in page
+    assert "buildQaUserTurn" in page
+    assert "lang:" in prompt
+    assert phrase in prompt
+    assert "I don't have that information, ask the couple" in prompt
     assert 'row.task === "guest_question"' in page
     assert "unexpected_cloud_fallback" in page
     assert "ONLY_ON_DEVICE" in page
