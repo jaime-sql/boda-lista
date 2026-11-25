@@ -68,6 +68,19 @@ describe('wedding info loader', () => {
     expect(loaded.date).toBe('2026-12-12');
     expect(loaded.venue.name).not.toBe(sheet.venue.name);
     expect(loaded.synthetic).toBe(true);
+    expect(loaded.venue.notes).toContain('25-minute drive from central Santa Tecla');
+    expect(loaded.venue.notes).toContain('covered backup hall');
+    expect(loaded.venue.notes_es).toContain('25 minutos');
+    expect(loaded.venue.notes_es).toContain('Santa Tecla');
+    expect(loaded.venue.notes_es).toContain('salón cubierto');
+    expect(loaded.parking.details).toContain('estacionamiento norte');
+    expect(loaded.parking.details).toContain('15:00');
+    expect(loaded.parking.details).toContain('01:15');
+    expect(loaded.parking.details_en).toContain('estacionamiento norte');
+    expect(loaded.parking.details_en).toContain('Centro Comercial El Encuentro');
+    expect(loaded.parking.details_en).toContain('15:00');
+    expect(loaded.parking.details_en).toContain('01:15');
+    expect(loaded.parking.details_en).toContain('20 minutes');
   });
 
   it('uses a valid cached sheet offline and refreshes it online', async () => {

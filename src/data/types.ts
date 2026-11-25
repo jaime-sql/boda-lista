@@ -13,6 +13,7 @@ export interface ScheduleItem {
 export interface InfoBlock {
   summary: string;
   details?: string;
+  details_en?: string;
   notes?: string;
 }
 
@@ -41,6 +42,7 @@ export interface WeddingInfo {
     ceremony_area?: string;
     reception_area?: string;
     notes?: string;
+    notes_es?: string;
   };
   dress_code: InfoBlock;
   parking: InfoBlock;

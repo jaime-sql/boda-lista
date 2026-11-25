@@ -153,6 +153,10 @@ describe('GuestPage', () => {
     expect(screen.queryByText(UNSURE_LABEL)).toBeNull();
     expect(screen.getAllByText(/16:00 Ceremonia \/ Ceremony, Jardín Principal/)).toHaveLength(2);
     expect(screen.getByText(/The wedding is at Hacienda El Sauce, Km 12.5 Carretera a La Libertad/)).toBeTruthy();
+    expect(screen.getByText(/25 minutos en carro del centro de Santa Tecla/)).toBeTruthy();
+    expect(screen.getByText(/25-minute drive from central Santa Tecla/)).toBeTruthy();
+    expect(screen.getByText(/cada 20 minutos de 15:00 a 19:00/)).toBeTruthy();
+    expect(screen.getByText(/every 20 minutes from 15:00 to 19:00/)).toBeTruthy();
     expect(screen.getByText(/Cocktail attire. Guayaberas are welcome./)).toBeTruthy();
     expect(screen.getByText(/Do not park on the highway shoulder./)).toBeTruthy();
     expect(screen.getByText(/Money envelopes are preferred./)).toBeTruthy();

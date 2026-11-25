@@ -15,15 +15,31 @@ function sentence(text: string): string {
   return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
 }
 
+function uniqueSentences(text: string): string {
+  const seen = new Set<string>();
+  const kept: string[] = [];
+  for (const part of text.split(/(?<=[.!?])\s+/)) {
+    const next = part.trim();
+    if (!next || seen.has(next)) continue;
+    seen.add(next);
+    kept.push(next);
+  }
+  return kept.join(' ');
+}
+
 function blockText(block: InfoBlock | undefined, lang: UiLang): string | null {
   if (!block) return null;
   const summary = clean(block.summary);
   const details = clean(block.details);
+  const detailsEn = clean(block.details_en);
   const notes = clean(block.notes);
-  if (lang === 'en' && notes) return notes;
+  if (lang === 'en') {
+    const english = uniqueSentences([detailsEn, notes].filter((part) => part.length > 0).join(' '));
+    if (english) return english;
+  }
   const local = [summary, details].filter((part) => part.length > 0).join(' ');
   if (local) return local;
-  return notes || null;
+  return notes || detailsEn || null;
 }
 
 function formatBlock(block: InfoBlock | undefined, lang: UiLang, lead: Record<UiLang, string>): string {
@@ -59,7 +75,9 @@ function formatVenue(info: WeddingInfo, lang: UiLang): string {
     .filter((part) => part.length > 0);
   const ceremony = clean(venue?.ceremony_area);
   const reception = clean(venue?.reception_area);
-  const notes = clean(venue?.notes);
+  const spanishNotes = clean(venue?.notes_es);
+  const englishNotes = clean(venue?.notes);
+  const notes = lang === 'es' ? spanishNotes || englishNotes : englishNotes || spanishNotes;
   if (place.length === 0 && !ceremony && !reception && !notes) return UNKNOWN_ANSWER;
   const lines: string[] = [];
   if (place.length > 0) {

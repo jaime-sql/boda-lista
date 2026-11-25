@@ -11,6 +11,7 @@ Fecha: sábado 12 de diciembre de 2026 (America/El_Salvador)
 - Santa Tecla, La Libertad, El Salvador
 - Ceremonia: Jardín Principal
 - Recepción: Salón El Encanto
+- La propiedad queda a 25 minutos en carro del centro de Santa Tecla. Hay un salón cubierto de respaldo si llueve.
 - The property is a 25-minute drive from central Santa Tecla. A covered backup hall is available if it rains.
 
 ## Schedule
@@ -30,6 +31,7 @@ Fecha: sábado 12 de diciembre de 2026 (America/El_Salvador)
 ## Parking
 - Valet gratuito en la entrada de la hacienda y shuttle desde el Centro Comercial El Encuentro.
 - El valet opera desde las 15:00. Hay un shuttle gratuito desde el parqueo del Centro Comercial El Encuentro (estacionamiento norte) cada 20 minutos de 15:00 a 19:00, y de regreso entre 22:00 y 01:15. No estacionar en el hombro de la carretera.
+- Valet operates from 15:00. A free shuttle runs from the north lot of Centro Comercial El Encuentro (estacionamiento norte) every 20 minutes from 15:00 to 19:00, and returns between 22:00 and 01:15. Do not park on the highway shoulder.
 - Do not park on the highway shoulder. The last shuttle back leaves at 1:15 a.m.
 
 ## Gifts

@@ -98,7 +98,14 @@ def build_wedding_info() -> dict:
             "country": "El Salvador",
             "ceremony_area": "Jardín Principal",
             "reception_area": "Salón El Encanto",
-            "notes": "The property is a 25-minute drive from central Santa Tecla. A covered backup hall is available if it rains.",
+            "notes": (
+                "The property is a 25-minute drive from central Santa Tecla. "
+                "A covered backup hall is available if it rains."
+            ),
+            "notes_es": (
+                "La propiedad queda a 25 minutos en carro del centro de Santa Tecla. "
+                "Hay un salón cubierto de respaldo si llueve."
+            ),
         },
         "schedule": [
             {"time": "15:30", "title": "Llegada de invitados / Guest arrival", "place": "Patio de ceibas", "notes": "Agua y café de bienvenida."},
@@ -124,6 +131,11 @@ def build_wedding_info() -> dict:
                 "El valet opera desde las 15:00. Hay un shuttle gratuito desde el parqueo del "
                 "Centro Comercial El Encuentro (estacionamiento norte) cada 20 minutos de 15:00 a 19:00, "
                 "y de regreso entre 22:00 y 01:15. No estacionar en el hombro de la carretera."
+            ),
+            "details_en": (
+                "Valet operates from 15:00. A free shuttle runs from the north lot of "
+                "Centro Comercial El Encuentro (estacionamiento norte) every 20 minutes from 15:00 to 19:00, "
+                "and returns between 22:00 and 01:15. Do not park on the highway shoulder."
             ),
             "notes": "Do not park on the highway shoulder. The last shuttle back leaves at 1:15 a.m.",
         },
@@ -171,7 +183,12 @@ def build_info_sheet_md(info: dict) -> str:
         f"- {v['city']}, {v['country']}",
         f"- Ceremonia: {v['ceremony_area']}",
         f"- Recepción: {v['reception_area']}",
-        f"- {v.get('notes', '')}",
+    ]
+    for key in ("notes_es", "notes"):
+        note = (v.get(key) or "").strip()
+        if note:
+            lines.append(f"- {note}")
+    lines += [
         "",
         "## Schedule",
     ]
@@ -184,6 +201,8 @@ def build_info_sheet_md(info: dict) -> str:
         lines += ["", f"## {title}", f"- {block['summary']}"]
         if block.get("details"):
             lines.append(f"- {block['details']}")
+        if block.get("details_en"):
+            lines.append(f"- {block['details_en']}")
         if block.get("notes"):
             lines.append(f"- {block['notes']}")
     lines += ["", "## Contacts"]

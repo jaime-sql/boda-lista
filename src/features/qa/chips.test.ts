@@ -15,16 +15,37 @@ const PRESENT: Record<ChipTopic, { es: string[]; en: string[] }> = {
     en: ['Schedule:', '16:00', 'Ceremonia / Ceremony', 'Jardín Principal', '01:15'],
   },
   venue: {
-    es: ['La boda es en Hacienda El Sauce', 'Km 12.5 Carretera a La Libertad', 'Ceremonia: Jardín Principal.'],
-    en: ['The wedding is at Hacienda El Sauce', 'Km 12.5 Carretera a La Libertad', 'Ceremony: Jardín Principal.'],
+    es: [
+      'La boda es en Hacienda El Sauce',
+      'Km 12.5 Carretera a La Libertad',
+      'Ceremonia: Jardín Principal.',
+      '25 minutos',
+      'Santa Tecla',
+      'salón cubierto',
+    ],
+    en: [
+      'The wedding is at Hacienda El Sauce',
+      'Km 12.5 Carretera a La Libertad',
+      'Ceremony: Jardín Principal.',
+      '25-minute drive from central Santa Tecla',
+      'covered backup hall',
+    ],
   },
   dress: {
     es: ['Vestimenta:', 'Formal de cóctel.', 'guayabera formal'],
     en: ['Dress code:', 'Cocktail attire.', 'Guayaberas are welcome.'],
   },
   parking: {
-    es: ['Parqueo:', 'Valet gratuito', '01:15'],
-    en: ['Parking:', 'Do not park on the highway shoulder.', '1:15 a.m.'],
+    es: ['Parqueo:', 'Valet gratuito', 'estacionamiento norte', 'Centro Comercial El Encuentro', '01:15'],
+    en: [
+      'Parking:',
+      '15:00',
+      '20 minutes',
+      'estacionamiento norte',
+      'Centro Comercial El Encuentro',
+      'Do not park on the highway shoulder.',
+      '1:15 a.m.',
+    ],
   },
   gifts: {
     es: ['Regalos:', 'Lluvia de sobres.'],

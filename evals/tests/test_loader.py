@@ -147,6 +147,33 @@ def test_fake_fixture_matches_repo_schema_shape(tmp_path):
     assert song[0]["energy"] == "dance"
 
 
+def test_wedding_info_sheet_is_bilingual_for_venue_and_parking():
+    schema = ROOT / "data" / "schema.json"
+    path = ROOT / "data" / "wedding_info.json"
+    info = load_jsonl(path, schema_path=schema)[0]
+    builtin = load_jsonl(path, schema_path=BUILTIN)[0]
+    for row in (info, builtin):
+        notes = row["venue"]["notes"]
+        notes_es = row["venue"]["notes_es"]
+        details = row["parking"]["details"]
+        details_en = row["parking"]["details_en"]
+        assert "25-minute drive from central Santa Tecla" in notes
+        assert "covered backup hall" in notes
+        assert "25 minutos" in notes_es and "Santa Tecla" in notes_es
+        assert "salón cubierto" in notes_es and "llueve" in notes_es
+        assert "estacionamiento norte" in details and "15:00" in details and "01:15" in details
+        assert "Centro Comercial El Encuentro" in details_en
+        assert "estacionamiento norte" in details_en
+        assert "15:00" in details_en and "19:00" in details_en
+        assert "22:00" in details_en and "01:15" in details_en
+        assert "20 minutes" in details_en and "highway shoulder" in details_en
+    sheet = (ROOT / "data" / "info_sheet.md").read_text(encoding="utf-8")
+    assert info["venue"]["notes"] in sheet
+    assert info["venue"]["notes_es"] in sheet
+    assert info["parking"]["details"] in sheet
+    assert info["parking"]["details_en"] in sheet
+
+
 def test_labeled_pack_on_main_loads_as_test_only():
     schema = ROOT / "data" / "schema.json"
     rsvp = load_jsonl(ROOT / "data" / "rsvp_replies.jsonl", schema_path=schema)
