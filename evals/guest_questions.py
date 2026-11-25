@@ -421,7 +421,61 @@ def _polarity_contradicts(prediction: str, facts: list[str]) -> bool:
     return got is not None and got != expected
 
 
-def _unsupported_quantity(prediction: str, gold: dict[str, Any], facts: list[str]) -> bool:
+FACT_LABEL_STRICT = "strict"
+FACT_LABEL_SHEET_GROUNDED = "sheet_grounded"
+
+
+def info_sheet_path():
+    """Markdown info sheet living next to wedding_info.json."""
+    from evals.loader import REPO_ROOT
+
+    return REPO_ROOT / "data" / "info_sheet.md"
+
+
+def _iter_strings(value: Any):
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for item in value.values():
+            yield from _iter_strings(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from _iter_strings(item)
+
+
+@lru_cache(maxsize=1)
+def info_sheet_quantities() -> tuple[frozenset[str], frozenset[str]]:
+    """Canonical times and numbers that appear anywhere on the info sheet.
+
+    Both languages are included. The same clock rules as the strict scorer
+    apply, so ``1:15 a.m.`` and ``01:15`` are the same value, and a number
+    written as ``25-minute`` or ``25 min`` is ``25``.
+    """
+    times: set[str] = set()
+    numbers: set[str] = set()
+    sources: list[str] = []
+    markdown = info_sheet_path()
+    if markdown.exists():
+        sources.append(markdown.read_text(encoding="utf-8"))
+    json_path = wedding_info_path()
+    if json_path.exists():
+        info = json.loads(json_path.read_text(encoding="utf-8"))
+        sources.extend(_iter_strings(info))
+    for source in sources:
+        found_times, found_numbers = canonical_quantities(source)
+        times.update(found_times)
+        numbers.update(found_numbers)
+    return frozenset(times), frozenset(numbers)
+
+
+def _unsupported_quantity(
+    prediction: str,
+    gold: dict[str, Any],
+    facts: list[str],
+    *,
+    extra_times: frozenset[str] | None = None,
+    extra_numbers: frozenset[str] | None = None,
+) -> bool:
     pred_times, pred_numbers = canonical_quantities(prediction)
     allowed_times: set[str] = set()
     allowed_numbers: set[str] = set()
@@ -431,32 +485,67 @@ def _unsupported_quantity(prediction: str, gold: dict[str, Any], facts: list[str
         times, numbers = canonical_quantities(source)
         allowed_times.update(times)
         allowed_numbers.update(numbers)
+    if extra_times:
+        allowed_times.update(extra_times)
+    if extra_numbers:
+        allowed_numbers.update(extra_numbers)
     if any(item not in allowed_times for item in pred_times):
         return True
     return any(item not in allowed_numbers for item in pred_numbers)
 
 
-def fact_label(gold: dict[str, Any], prediction_text: str | None) -> str:
+def fact_label(
+    gold: dict[str, Any],
+    prediction_text: str | None,
+    *,
+    mode: str = FACT_LABEL_STRICT,
+) -> str:
     """Return correct, hallucination, abstain, wrong_fact, or incomplete.
 
     ``wrong_fact`` and out-of-scope ``hallucination`` are the fact-based
     hallucinations. ``abstain`` and ``incomplete`` are not.
+
+    ``mode="strict"`` (the default) flags a time or number that is not in
+    the gold facts or the gold answer. ``mode="sheet_grounded"`` also
+    accepts times and numbers that appear anywhere on the info sheet.
     """
+    if mode not in {FACT_LABEL_STRICT, FACT_LABEL_SHEET_GROUNDED}:
+        raise ValueError(f"unknown fact label mode: {mode}")
     text = prediction_text or ""
     if gold.get("out_of_scope"):
         return "correct" if is_refusal(text) else "hallucination"
     if is_refusal(text):
         return "abstain"
     facts = row_facts(gold)
-    if _unsupported_quantity(text, gold, facts) or _polarity_contradicts(text, facts):
+    extra_times: frozenset[str] | None = None
+    extra_numbers: frozenset[str] | None = None
+    if mode == FACT_LABEL_SHEET_GROUNDED:
+        extra_times, extra_numbers = info_sheet_quantities()
+    if _unsupported_quantity(
+        text,
+        gold,
+        facts,
+        extra_times=extra_times,
+        extra_numbers=extra_numbers,
+    ) or _polarity_contradicts(text, facts):
         return "wrong_fact"
     if all(_fact_present(*fact_spec(fact), text) for fact in facts):
         return "correct"
     return "incomplete"
 
 
-def is_fact_hallucination(gold: dict[str, Any], prediction_text: str | None) -> bool:
-    return fact_label(gold, prediction_text) in {"wrong_fact", "hallucination"}
+def fact_label_sheet(gold: dict[str, Any], prediction_text: str | None) -> str:
+    """Sheet-grounded fact label. The default ``fact_label`` stays strict."""
+    return fact_label(gold, prediction_text, mode=FACT_LABEL_SHEET_GROUNDED)
+
+
+def is_fact_hallucination(
+    gold: dict[str, Any],
+    prediction_text: str | None,
+    *,
+    mode: str = FACT_LABEL_STRICT,
+) -> bool:
+    return fact_label(gold, prediction_text, mode=mode) in {"wrong_fact", "hallucination"}
 
 
 def wedding_info_path():
@@ -534,7 +623,7 @@ def _rate(numerator: int, denominator: int) -> float | None:
     return numerator / denominator
 
 
-def _rates(pairs: list[tuple[dict[str, Any], str]]) -> dict[str, Any]:
+def _rates(pairs: list[tuple[dict[str, Any], str]], *, mode: str = FACT_LABEL_STRICT) -> dict[str, Any]:
     out_of_scope = [(gold, text) for gold, text in pairs if gold.get("out_of_scope")]
     in_scope = [(gold, text) for gold, text in pairs if not gold.get("out_of_scope")]
     true_positive = sum(1 for _gold, text in out_of_scope if is_refusal(text))
@@ -542,7 +631,7 @@ def _rates(pairs: list[tuple[dict[str, Any], str]]) -> dict[str, Any]:
     false_negative = len(out_of_scope) - true_positive
     precision = _rate(true_positive, true_positive + false_positive)
     recall = _rate(true_positive, true_positive + false_negative)
-    labels = [(gold, text, fact_label(gold, text)) for gold, text in pairs]
+    labels = [(gold, text, fact_label(gold, text, mode=mode)) for gold, text in pairs]
     fact_correct = sum(1 for gold, _text, label in labels if not gold.get("out_of_scope") and label == "correct")
     wrong = sum(1 for _gold, _text, label in labels if label in {"wrong_fact", "hallucination"})
     incomplete = sum(1 for _gold, _text, label in labels if label == "incomplete")
@@ -601,13 +690,15 @@ def format_guest_metric_line(summary: dict[str, Any] | None) -> str | None:
 def score_guest_questions(
     golds: list[dict[str, Any]],
     predictions: list[dict[str, Any]] | dict[str, dict[str, Any]],
+    *,
+    mode: str = FACT_LABEL_STRICT,
 ) -> dict[str, Any]:
     """Score provided predictions. This does not call a model."""
     by_id = predictions if isinstance(predictions, dict) else {row["id"]: row for row in predictions}
     pairs = [(gold, answer_text(by_id.get(gold["id"]))) for gold in golds]
-    summary = _rates(pairs)
+    summary = _rates(pairs, mode=mode)
     grouped: dict[str, list[tuple[dict[str, Any], str]]] = {}
     for gold, text in pairs:
         grouped.setdefault(gold.get("split") or "unk", []).append((gold, text))
-    summary["by_split"] = {split: _rates(rows) for split, rows in sorted(grouped.items())}
+    summary["by_split"] = {split: _rates(rows, mode=mode) for split, rows in sorted(grouped.items())}
     return summary
