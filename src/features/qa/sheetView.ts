@@ -44,15 +44,45 @@ export function venueLine(info: WeddingInfo): string {
     .join(', ');
 }
 
+function minutesOfDay(time: string): number | null {
+  const match = /^(\\d{1,2}):([0-5]\\d)$/.exec(time);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  if (hours > 23) return null;
+  return hours * 60 + Number(match[2]);
+}
+
+function calendarDateTime(isoDate: string, minutesFromStart: number): string {
+  const dayOffset = Math.floor(minutesFromStart / (24 * 60));
+  const minuteOfDay = ((minutesFromStart % (24 * 60)) + 24 * 60) % (24 * 60);
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + dayOffset);
+
+  const compactDate = date.toISOString().slice(0, 10).replaceAll('-', '');
+  const hours = String(Math.floor(minuteOfDay / 60)).padStart(2, '0');
+  const minutes = String(minuteOfDay % 60).padStart(2, '0');
+  return `${compactDate}T${hours}${minutes}00`;
+}
+
 export function calendarUrl(info: WeddingInfo): string {
   const item = ceremonyItem(info);
-  const compactDate = info.date.replaceAll('-', '');
-  const compactTime = (item?.time ?? '16:00').replace(':', '') + '00';
-  const start = `${compactDate}T${compactTime}`;
+  const startMinutes = minutesOfDay(item?.time ?? '16:00') ?? 16 * 60;
+  const itemIndex = item ? info.schedule.indexOf(item) : -1;
+  const nextMinutes =
+    itemIndex >= 0 ? minutesOfDay(info.schedule[itemIndex + 1]?.time ?? '') : null;
+  const endMinutes =
+    nextMinutes === null || nextMinutes === startMinutes
+      ? startMinutes + 60
+      : nextMinutes < startMinutes
+        ? nextMinutes + 24 * 60
+        : nextMinutes;
+  const start = calendarDateTime(info.date, startMinutes);
+  const end = calendarDateTime(info.date, endMinutes);
   const params = new URLSearchParams({
     action: 'TEMPLATE',
     text: `${personName(info.couple.bride)} y ${personName(info.couple.groom)}`,
-    dates: `${start}/${start}`,
+    dates: `${start}/${end}`,
+    ctz: info.timezone || 'America/El_Salvador',
     location: venueLine(info),
     details: info.venue.notes ?? info.disclaimer,
   });
@@ -66,7 +96,7 @@ export function mapsUrl(info: WeddingInfo): string {
 
 export function whatsAppUrl(info: WeddingInfo, question: string): string | null {
   const phone = info.contacts.find((contact) => (contact.phone ?? '').trim().length > 0)?.phone ?? '';
-  const digits = phone.replace(/\D/g, '');
+  const digits = phone.replace(/\\D/g, '');
   if (!digits) return null;
   const params = new URLSearchParams({ text: question });
   return `https://wa.me/${digits}?${params.toString()}`;
