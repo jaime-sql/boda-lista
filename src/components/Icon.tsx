@@ -21,6 +21,10 @@ const PATHS = {
   phonecall:
     '<path d="M5 4h3.5l1.5 4.5-2 1.5a11 11 0 0 0 6 6l1.5-2L20 15.5V19a1.5 1.5 0 0 1-1.6 1.5C10.5 20 4 13.5 3.5 5.6A1.5 1.5 0 0 1 5 4z"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  music: '<path d="M9 18V5.5l11-2V16"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
+  download: '<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>',
+  printer: '<path d="M7 9V3.5h10V9M7 17H4.5V9h15v8H17M7 14h10v6.5H7z"/>',
+  flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
 } as const;
 
 export type IconName = keyof typeof PATHS;

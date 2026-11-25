@@ -1,0 +1,133 @@
+.dj-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dj-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dj-arrow {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-5) 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-weight: var(--weight-semibold);
+}
+
+.dj-group-title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--color-primary);
+  padding: var(--space-4) var(--space-5) var(--space-2);
+}
+
+.dj-group-title.amb {
+  color: var(--color-danger-fg);
+}
+
+.dj-playlist {
+  list-style: none;
+}
+
+.dj-trk {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--tap-comfy);
+  padding: var(--space-2) var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.dj-trk.amb {
+  background: var(--color-danger-bg);
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  color: var(--color-danger-fg);
+}
+
+.dj-tn {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dj-tt {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: var(--leading-snug);
+}
+
+.dj-tt b,
+.dj-tt span {
+  overflow-wrap: anywhere;
+}
+
+.dj-req {
+  font-weight: var(--weight-bold);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.dj-eq {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 20px;
+}
+
+.dj-eq b {
+  width: 6px;
+  border-radius: 2px;
+  background: var(--color-border);
+}
+
+.dj-eq b.on {
+  background: var(--color-primary);
+}
+
+.dj-eq-1 { height: 6px; }
+.dj-eq-2 { height: 9px; }
+.dj-eq-3 { height: 12px; }
+.dj-eq-4 { height: 15px; }
+.dj-eq-5 { height: 18px; }
+
+.dj-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.dj-actions .btn {
+  flex: 1 1 160px;
+}
+
+@media print {
+  .no-print,
+  .weave {
+    display: none !important;
+  }
+
+  .page-narrow {
+    max-width: 100%;
+    padding: 0;
+  }
+
+  .card {
+    box-shadow: none;
+    border-color: var(--color-border-strong);
+  }
+}
