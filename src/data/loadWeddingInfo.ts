@@ -15,6 +15,10 @@ const packLoaders = import.meta.glob<PackModule>('../../data/wedding_info.json')
 
 const fallbackSheet = sample as WeddingInfo;
 
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || typeof value === 'string';
+}
+
 export function isWeddingInfo(value: unknown): value is WeddingInfo {
   if (!value || typeof value !== 'object') return false;
   const sheet = value as WeddingInfo;
@@ -30,8 +34,12 @@ export function isWeddingInfo(value: unknown): value is WeddingInfo {
     typeof sheet.venue?.address === 'string' &&
     typeof sheet.venue?.city === 'string' &&
     typeof sheet.venue?.country === 'string' &&
+    isOptionalString(sheet.venue?.notes) &&
+    isOptionalString(sheet.venue?.notes_es) &&
     typeof sheet.dress_code?.summary === 'string' &&
     typeof sheet.parking?.summary === 'string' &&
+    isOptionalString(sheet.parking?.details) &&
+    isOptionalString(sheet.parking?.details_en) &&
     typeof sheet.gifts?.summary === 'string' &&
     Array.isArray(sheet.contacts)
   );

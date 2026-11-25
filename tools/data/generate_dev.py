@@ -1017,10 +1017,17 @@ def _contact(info: dict, needle: str) -> dict:
 
 
 def _note_parts(notes: str) -> list[str]:
+    """The two English venue sentences: drive, then rain.
+
+    `venue.notes` is still that pair. A bilingual string that also contains
+    the Spanish pair yields the same two English sentences.
+    """
     parts = [part.strip().rstrip(".") for part in notes.split(". ") if part.strip()]
-    if len(parts) != 2:
-        raise SystemExit(f"venue notes did not split into two sentences: {notes!r}")
-    return parts
+    english = [part for part in parts if "25-minute" in part or "covered backup hall" in part]
+    chosen = parts if len(parts) == 2 else english
+    if len(chosen) != 2:
+        raise SystemExit(f"venue notes did not split into two English sentences: {notes!r}")
+    return chosen
 
 
 def question_facts(info: dict) -> list[dict]:
@@ -1054,6 +1061,24 @@ def question_facts(info: dict) -> list[dict]:
     require_source(info_blob, "highway shoulder")
     require_source(venue["notes"], drive)
     require_source(venue["notes"], rain)
+    notes_es = venue.get("notes_es") or ""
+    if not notes_es:
+        raise SystemExit("venue.notes_es is missing")
+    require_source(notes_es, "25 minutos")
+    require_source(notes_es, "Santa Tecla")
+    require_source(notes_es, "salón cubierto")
+    require_source(notes_es, "llueve")
+    details_en = park.get("details_en") or ""
+    if not details_en:
+        raise SystemExit("parking.details_en is missing")
+    require_source(details_en, "15:00")
+    require_source(details_en, "19:00")
+    require_source(details_en, "22:00")
+    require_source(details_en, "01:15")
+    require_source(details_en, "Centro Comercial El Encuentro")
+    require_source(details_en, "estacionamiento norte")
+    require_source(details_en, "20 minutes")
+    require_source(details_en, "highway shoulder")
     require_source(info_blob, "25-minute")
     require_source(info_blob, "covered backup hall")
     require_source(info_blob, "Agua y café de bienvenida")
@@ -1343,6 +1368,8 @@ def build_questions(info: dict, sheet: str, norms: list[str], max_test_len: int)
     for snippet in (
         info["venue"]["name"],
         info["venue"]["address"],
+        info["venue"].get("notes_es", ""),
+        info["parking"].get("details_en", ""),
         info["contacts"][0]["email"],
         info["contacts"][0]["phone"],
         info["dress_code"]["summary"],

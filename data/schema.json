@@ -199,7 +199,14 @@
             "country": { "type": "string", "minLength": 1 },
             "ceremony_area": { "type": "string" },
             "reception_area": { "type": "string" },
-            "notes": { "type": "string" }
+            "notes": {
+              "type": "string",
+              "description": "English venue note. Same facts as notes_es: drive from central Santa Tecla, and a covered backup hall if it rains."
+            },
+            "notes_es": {
+              "type": "string",
+              "description": "Spanish venue note. Same facts as notes. Place name Santa Tecla is unchanged."
+            }
           }
         },
         "dress_code": { "$ref": "#/$defs/info_block" },
@@ -239,6 +246,10 @@
       "properties": {
         "summary": { "type": "string", "minLength": 1 },
         "details": { "type": "string" },
+        "details_en": {
+          "type": "string",
+          "description": "English details. Same facts as details: times stay HH:MM and place names stay unchanged."
+        },
         "notes": { "type": "string" }
       }
     },
