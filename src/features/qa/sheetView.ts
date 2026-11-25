@@ -45,7 +45,7 @@ export function venueLine(info: WeddingInfo): string {
 }
 
 function minutesOfDay(time: string): number | null {
-  const match = /^(\\d{1,2}):([0-5]\\d)$/.exec(time);
+  const match = /^(\d{1,2}):([0-5]\d)$/.exec(time);
   if (!match) return null;
   const hours = Number(match[1]);
   if (hours > 23) return null;
@@ -96,7 +96,7 @@ export function mapsUrl(info: WeddingInfo): string {
 
 export function whatsAppUrl(info: WeddingInfo, question: string): string | null {
   const phone = info.contacts.find((contact) => (contact.phone ?? '').trim().length > 0)?.phone ?? '';
-  const digits = phone.replace(/\\D/g, '');
+  const digits = phone.replace(/\D/g, '');
   if (!digits) return null;
   const params = new URLSearchParams({ text: question });
   return `https://wa.me/${digits}?${params.toString()}`;
