@@ -173,3 +173,87 @@ def test_english_answer_at_a_place_name_matches_question_lang():
     assert language_mismatch(prediction, "es")
     assert wedding_info_path() == REPO_ROOT / "data" / "wedding_info.json"
     assert wedding_info_path().is_file()
+
+
+def test_sheet_grounded_true_extra_time_is_not_hallucinated():
+    gold = {
+        "id": "valet-shuttle",
+        "split": "dev",
+        "lang": "es",
+        "answer": "Sí hay valet gratuito desde las 15:00, y el shuttle sale del estacionamiento norte del Centro Comercial El Encuentro cada 20 minutos.",
+        "out_of_scope": False,
+        "gold_facts": [
+            "yes",
+            "15:00",
+            "estacionamiento norte",
+            "Centro Comercial El Encuentro",
+            "20 minutos",
+        ],
+    }
+    # 19:00, 22:00 and 01:15 are on the info sheet, not in gold_facts.
+    prediction = (
+        "Sí hay valet gratuito desde las 15:00. El shuttle sale del "
+        "estacionamiento norte del Centro Comercial El Encuentro cada 20 minutos "
+        "de 15:00 a 19:00, y de regreso entre 22:00 y 01:15."
+    )
+    assert fact_label(gold, prediction) == "wrong_fact"
+    assert fact_label(gold, prediction, mode="sheet_grounded") == "correct"
+    from evals.guest_questions import fact_label_sheet
+
+    assert fact_label_sheet(gold, prediction) == "correct"
+
+
+def test_sheet_grounded_fabricated_time_is_still_wrong_fact():
+    gold = {
+        "id": "valet-shuttle-fake",
+        "split": "dev",
+        "lang": "es",
+        "answer": "Sí hay valet gratuito desde las 15:00, y el shuttle sale del estacionamiento norte del Centro Comercial El Encuentro cada 20 minutos.",
+        "out_of_scope": False,
+        "gold_facts": [
+            "yes",
+            "15:00",
+            "estacionamiento norte",
+            "Centro Comercial El Encuentro",
+            "20 minutos",
+        ],
+    }
+    fabricated = (
+        "Sí hay valet gratuito desde las 15:00. El shuttle sale del "
+        "estacionamiento norte del Centro Comercial El Encuentro cada 20 minutos, "
+        "y también a las 03:45."
+    )
+    assert fact_label(gold, fabricated) == "wrong_fact"
+    assert fact_label(gold, fabricated, mode="sheet_grounded") == "wrong_fact"
+
+
+def test_sheet_grounded_true_extra_number_is_incomplete_when_gold_facts_missing():
+    gold = {
+        "id": "rain-plan",
+        "split": "dev",
+        "lang": "es",
+        "answer": "Si llueve, hay un salón cubierto de respaldo.",
+        "out_of_scope": False,
+        "gold_facts": ["llueve", "salón cubierto"],
+    }
+    # 25 is on the sheet ("25-minute drive") but the gold facts are absent here.
+    prediction = (
+        "The property is a 25-minute drive from central Santa Tecla. "
+        "A covered backup hall is available if it rains."
+    )
+    assert fact_label(gold, prediction) == "wrong_fact"
+    assert fact_label(gold, prediction, mode="sheet_grounded") == "incomplete"
+    complete = "Si llueve, hay un salón cubierto de respaldo, a 25 minutos de Santa Tecla."
+    assert fact_label(gold, complete) == "wrong_fact"
+    assert fact_label(gold, complete, mode="sheet_grounded") == "correct"
+
+
+def test_sheet_quantities_include_normalized_sheet_clocks_and_numbers():
+    from evals.guest_questions import info_sheet_quantities
+
+    times, numbers = info_sheet_quantities()
+    assert "19:00" in times
+    assert "22:00" in times
+    assert "01:15" in times
+    assert "25" in numbers
+    assert "03:45" not in times
