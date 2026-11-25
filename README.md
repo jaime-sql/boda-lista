@@ -117,6 +117,10 @@ Pull requests run `.github/workflows/firebase-hosting-preview.yml`. It publishes
 
 Optional build secrets, used when present: `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`, `VITE_FIREBASE_MEASUREMENT_ID`, `VITE_APPCHECK_SITE_KEY`, and `VITE_GEMINI_CLOUD_MODEL`.
 
+## Firestore setup
+
+Create the Firestore database (Production mode, `nam5`). Grant the deploy service account the Firebase Rules Admin role. Set the `VITE_APPCHECK_SITE_KEY` repo secret (public reCAPTCHA Enterprise site key). Then run the rules workflow and re-run the hosting deploy. Never commit secrets.
+
 ## Environment variables
 
 | Variable | Purpose |
