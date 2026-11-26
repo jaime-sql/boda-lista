@@ -42,6 +42,7 @@ Instructions for AI coding agents working in `jaime-sql/boda-lista`.
 - **Privacy & Firestore (`firestore.rules`, `src/firebase/logs.ts`):**
   - `prompt_logs` stores only telemetry (`ts`, `feature`, `route`, `fallback_reason`, `latency_ms`, `input_chars`, `output_chars`, `model`, `confidence`, `session_id`, optional `lang`, optional `edited_by_guest`) — never question text, model answers, raw RSVP messages, or guest names.
   - `rsvps` stores extracted fields (`household_id`, `attending`, `party_size`, `meal_restrictions`, `kids_count`, `needs_ride`, `ambiguous`, `edited`, `ts`) — never the raw message or guest names.
+  - `songs` stores song requests (`household_id`, `slot` 1–3, `title`, `artist`, `energy`, `ambiguous`, `raw_text`, `ts`) — append-only `create` and authenticated organizer `read`.
   - All committed data in `data/` is synthetic (`data/wedding_info.json`: Lucía Mendoza & Andrés Solís, Hacienda El Sauce, Santa Tecla, `2026-12-12`). Never put real guest PII in the repo or public demo unless consented.
 - **Debug gate (`?debug=1`):**
   - Preview Hosting builds set `VITE_ENABLE_DEBUG=true`; production Hosting builds omit it. Keep `?debug=1` hidden in production builds.
@@ -71,7 +72,7 @@ Instructions for AI coding agents working in `jaime-sql/boda-lista`.
 | `src/ai/` | Hybrid `ask()`, route/fallback logic, sheet logging, device probe |
 | `src/config/` | Confidence threshold loader & `config.json` |
 | `src/data/` | `wedding_info` loader, `localStorage` offline cache, sample sheet |
-| `src/features/` | `qa/`, `rsvp/` (and feature-specific modules/prompts/parsers) |
+| `src/features/` | `qa/`, `rsvp/`, `song/` (feature-specific prompts, parsers, extraction, persistence) |
 | `src/pages/` | Guest Q&A (`/`), RSVP (`/rsvp`), Organizer diagnostics (`/admin`) |
 | `src/styles/` | Design tokens (`tokens.css` / `tokens.json`) and stylesheets |
 | `firestore.rules` | Strict field-allowlisted Firestore rules + CI deploy workflow |
@@ -90,3 +91,24 @@ npm run lhci                 # Lighthouse CI accessibility >= 0.95
 python tools/data/validate.py
 python -m pytest evals/tests
 ```
+
+## 7. Last Worked State & Open Blockers (Updated 2026-11-26 SV)
+
+> Check git log and Notion `Boda Lista — START HERE (handoff)` for updates newer than `b2e93e2`.
+
+- **Latest shipped `main` (`b2e93e2`):**
+  - **PR #16 (`a7180a4`):** Added `AGENTS.md` repository guide.
+  - **PR #14 (`132a111`):** Fixed Google Calendar event time window (`start`/`end` range + `ctz` timezone) in `src/features/qa/sheetView.ts`.
+  - **PR #15 (`b2e93e2`):** Shipped **Feature 2b (Songs & DJ Playlist)** — up to 3 song inputs on `/rsvp` (for `yes`/`maybe` guests), `feature: "song"` hybrid inference with cloud retry, `RouteBadge` song summary on confirmation, `songs` rules in `firestore.rules`, and `Lista para el DJ` on `/admin` (deduplication, `slow` -> `medium` -> `dance` ordering, `Revisar` section for ambiguous songs, CSV export, and print CSS).
+- **Deploy & test status at `b2e93e2`:**
+  - `npm test` passed (`23` files, `90` tests) and `npm run build` passed on `main`. (`npm run test:e2e` passed `12` Playwright tests on PR #15 prior to merge.)
+  - **Live Firebase Hosting (`https://boda-lista.web.app`):** `Deploy to Firebase Hosting` run `45771011758` succeeded and includes `VITE_APPCHECK_SITE_KEY`, PR #14, PR #15, and PR #16.
+- **Open blocker — Firestore rules CI (`Deploy Firestore rules` run `45771011677`):**
+  - Run `45771011677` failed with `HTTP Error: 403, Permission denied to get service [firestore.googleapis.com]`.
+  - The GitHub deploy service account already has `roles/firebase.rulesAdmin`, but `firebase-tools deploy --only firestore:rules` checks Service Usage first and needs `serviceusage.services.get` (e.g., `roles/serviceusage.serviceUsageViewer`).
+  - Until Jaime grants that role and re-runs `45771011677` (or runs a manual owner deploy `firebase deploy --only firestore:rules`), live `firestore.rules` does **not** yet have the `songs` collection rule, so live writes/reads on `/songs` will fail.
+- **Next open priorities:**
+  1. Unblock and complete `Deploy Firestore rules` for live `songs` reads/writes.
+  2. Build the `"Cómo responde la IA"` analytics panel on `/admin` + rollup JSON per Notion's Analytics panel spec v1.2 (excluding `offline_no_threshold` and `sheet` routes from device share and cloud savings).
+  3. Complete Gemini Nano on-device dev eval (`evals/nano_runner/index.html`) if Chrome Prompt API + Optimization Guide flags work on Jaime's desktop Chrome; otherwise keep `src/config/config.json` cut-offs at `null` per Jaime's decision.
+  4. Fill remaining Devpost text and 3-minute video script placeholders from verified metrics before the Sun Nov 29 noon SV code freeze.
