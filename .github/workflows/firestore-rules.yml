@@ -8,6 +8,7 @@ on:
     paths:
       - firestore.rules
       - firebase.json
+      - tools/ci/deploy-firestore-rules.sh
 
 permissions:
   contents: read
@@ -46,7 +47,7 @@ jobs:
           chmod 600 "$key_file"
           printf '%s\n' "$FIREBASE_SERVICE_ACCOUNT" > "$key_file"
           export GOOGLE_APPLICATION_CREDENTIALS="$key_file"
-          npx -y firebase-tools@latest deploy --only firestore:rules --project "$FIREBASE_PROJECT_ID" --non-interactive
+          bash tools/ci/deploy-firestore-rules.sh
 
       - name: Delete service account key
         if: always()
