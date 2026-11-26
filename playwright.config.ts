@@ -1,5 +1,9 @@
 import { defineConfig } from '@playwright/test';
 
+const webServerEnv = Object.fromEntries(
+  Object.entries(process.env).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
+);
+
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: true,
@@ -12,7 +16,8 @@ export default defineConfig({
     video: 'off',
   },
   webServer: {
-    command: 'VITE_E2E=true npm run build && npm run preview -- --host 127.0.0.1 --port 4173 --strictPort',
+    command: 'npm run build && npm run preview -- --host 127.0.0.1 --port 4173 --strictPort',
+    env: { ...webServerEnv, VITE_E2E: 'true' },
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: false,
     timeout: 120_000,

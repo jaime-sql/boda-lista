@@ -17,6 +17,12 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    match /songs/{songId} {
+      allow create: if isValidSong(request.resource.data);
+      allow read: if request.auth != null;
+      allow update, delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
@@ -106,6 +112,36 @@ function isValidRsvp(data) {
     && (data.needs_ride == null || data.needs_ride is bool)
     && data.ambiguous is bool
     && data.edited is bool
+    && data.ts is string
+    && data.ts.size() >= 20
+    && data.ts.size() <= 40;
+}
+
+function isValidSong(data) {
+  return data.keys().hasOnly([
+      'household_id',
+      'slot',
+      'title',
+      'artist',
+      'energy',
+      'ambiguous',
+      'raw_text',
+      'ts'
+    ])
+    && data.household_id is string
+    && data.household_id.size() >= 4
+    && data.household_id.size() <= 40
+    && data.household_id.matches('^[A-Za-z0-9-]+$')
+    && data.slot is int
+    && data.slot >= 1
+    && data.slot <= 3
+    && (data.title == null || (data.title is string && data.title.size() >= 1 && data.title.size() <= 200))
+    && (data.artist == null || (data.artist is string && data.artist.size() >= 1 && data.artist.size() <= 200))
+    && (data.energy == null || data.energy in ['slow', 'medium', 'dance'])
+    && data.ambiguous is bool
+    && data.raw_text is string
+    && data.raw_text.size() >= 1
+    && data.raw_text.size() <= 500
     && data.ts is string
     && data.ts.size() >= 20
     && data.ts.size() <= 40;

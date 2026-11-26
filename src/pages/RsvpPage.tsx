@@ -1,21 +1,36 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { RouteBadge } from '../components/RouteBadge';
 import { Icon } from '../components/Icon';
 import { ToastProvider, useToast } from '../components/ToastProvider';
+import type { Route } from '../ai/types';
 import { markLastPromptDetails } from '../debug/sessionLog';
 import { resolveWeddingInfo } from '../data/loadWeddingInfo';
 import type { WeddingInfo } from '../data/types';
 import { extractRsvp } from '../features/rsvp/extract';
 import { sameExtraction, type RsvpExtraction } from '../features/rsvp/parse';
 import { saveRsvp, toSavedRsvp } from '../features/rsvp/save';
+import { extractSong } from '../features/song/extract';
+import { saveSong, toSavedSong } from '../features/song/save';
 import { calendarUrl, dateLine, mapsUrl, partnerInitials, type UiLang } from '../features/qa/sheetView';
 import { useOnline } from '../lib/useOnline';
 
 type Lang = UiLang;
-type Step = 'paste' | 'confirm' | 'success';
+type Step = 'paste' | 'confirm' | 'songs' | 'success';
+
+interface SubmittedSong {
+  slot: number;
+  title: string | null;
+  artist: string | null;
+  ambiguous: boolean;
+  raw_text: string;
+  route: Route;
+  unsure: boolean;
+}
 
 const CODE_PATTERN = /^[A-Za-z0-9-]{4,40}$/;
 const MEALS = ['vegetarian', 'vegan', 'gluten_free', 'kids_menu'] as const;
+const MAX_SONGS = 3;
 
 const COPY = {
   es: {
@@ -41,6 +56,10 @@ const COPY = {
     ride: '¿Necesitan transporte?',
     rideYes: 'Sí',
     rideNo: 'No',
+    next: 'Continuar',
+    savingRsvp: 'Guardando…',
+    rsvpError: 'No se pudo guardar la confirmación. Inténtalo de nuevo.',
+    skip: 'Omitir canciones',
     send: 'Enviar respuesta',
     sent: 'Respuesta enviada',
     thanks: 'Gracias por confirmar',
@@ -54,6 +73,17 @@ const COPY = {
     detailsTab: 'Detalles',
     later: 'Esa parte llega después.',
     labels: { vegetarian: 'Vegetariano', vegan: 'Vegano', gluten_free: 'Sin gluten', kids_menu: 'Menú infantil' },
+    songsTitle: 'Canciones para el DJ',
+    songsHint: 'Escribe hasta 3 canciones que quieras escuchar. Puedes dejarlas en blanco.',
+    songsOfflineHint: 'Sin señal: las canciones se revisan en tu teléfono antes de guardarse.',
+    songLabel: (n: number) => `Canción ${n}`,
+    songPlaceholder: 'Título o "la de Marc Anthony"',
+    savingSongs: 'Guardando canciones…',
+    songAmbiguous: 'No logré identificar una canción clara, pero la anotamos para revisar.',
+    songError: 'No se pudo guardar esa canción.',
+    songsSummary: 'Canciones',
+    songsSkipped: 'Sin canciones',
+    songReviewTag: 'Revisar',
   },
   en: {
     eyebrow: 'Confirm your attendance',
@@ -78,6 +108,10 @@ const COPY = {
     ride: 'Do you need a ride?',
     rideYes: 'Yes',
     rideNo: 'No',
+    next: 'Continue',
+    savingRsvp: 'Saving…',
+    rsvpError: 'Could not save your reply. Try again.',
+    skip: 'Skip songs',
     send: 'Send reply',
     sent: 'Reply sent',
     thanks: 'Thank you for confirming',
@@ -87,10 +121,21 @@ const COPY = {
     calendar: 'Add to calendar',
     map: 'Directions',
     askTab: 'Ask',
-    confirmTab: 'Confirm',
+    confirmTab: 'RSVP',
     detailsTab: 'Details',
     later: 'That part comes later.',
     labels: { vegetarian: 'Vegetarian', vegan: 'Vegan', gluten_free: 'Gluten free', kids_menu: 'Kids menu' },
+    songsTitle: 'Songs for the DJ',
+    songsHint: 'Add up to 3 songs you want to hear. You can leave them blank.',
+    songsOfflineHint: 'Offline: your device reads the songs before saving.',
+    songLabel: (n: number) => `Song ${n}`,
+    songPlaceholder: 'Title or "the Marc Anthony song"',
+    savingSongs: 'Saving songs…',
+    songAmbiguous: 'Could not identify a clear song, but we noted it for review.',
+    songError: 'Could not save that song.',
+    songsSummary: 'Songs',
+    songsSkipped: 'No songs',
+    songReviewTag: 'Review',
   },
 } as const;
 
@@ -126,9 +171,17 @@ function RsvpScreen() {
   const [baseline, setBaseline] = useState<Draft | null>(null);
   const [allergy, setAllergy] = useState('');
   const [busy, setBusy] = useState(false);
+  const [savingRsvp, setSavingRsvp] = useState(false);
   const [note, setNote] = useState('');
   const [unsure, setUnsure] = useState(false);
+  const [songTexts, setSongTexts] = useState<string[]>(['', '', '']);
+  const [savingSongs, setSavingSongs] = useState(false);
+  const [submittedSongs, setSubmittedSongs] = useState<SubmittedSong[]>([]);
   const copy = COPY[lang];
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   useEffect(() => {
     let alive = true;
@@ -190,9 +243,83 @@ function RsvpScreen() {
       baseline?.attending === 'yes' || baseline?.attending === 'no' || baseline?.attending === 'maybe'
         ? !sameExtraction({ ...baseline, attending: baseline.attending }, next)
         : true;
-    markLastPromptDetails({ edited_by_guest: edited, confidence: next.confidence });
-    await saveRsvp(toSavedRsvp(code.trim(), next, edited));
-    setDraft(next);
+    setSavingRsvp(true);
+    try {
+      markLastPromptDetails({ edited_by_guest: edited, confidence: next.confidence });
+      await saveRsvp(toSavedRsvp(code.trim(), next, edited));
+      setDraft(next);
+      setSubmittedSongs([]);
+      if (next.attending === 'yes' || next.attending === 'maybe') {
+        setStep('songs');
+      } else {
+        setStep('success');
+      }
+    } catch {
+      publish({ title: copy.rsvpError });
+    } finally {
+      setSavingRsvp(false);
+    }
+  }
+
+  async function saveSongs() {
+    const filled = songTexts
+      .map((raw, index) => ({ slot: index + 1, text: raw.trim() }))
+      .filter((item) => item.text.length > 0);
+    if (filled.length === 0) {
+      setSubmittedSongs([]);
+      setStep('success');
+      return;
+    }
+
+    setSavingSongs(true);
+    const savedList: SubmittedSong[] = [];
+    let anyAmbiguous = false;
+    let anyError = false;
+
+    for (const item of filled) {
+      try {
+        const attempt = await extractSong(item.text, lang);
+        const extraction = attempt.extraction ?? {
+          title: null,
+          artist: null,
+          energy: null,
+          ambiguous: true,
+          confidence: 0,
+        };
+        await saveSong(toSavedSong(code.trim(), item.slot, extraction, item.text));
+        if (extraction.ambiguous || extraction.title === null) {
+          anyAmbiguous = true;
+        }
+        savedList.push({
+          slot: item.slot,
+          title: extraction.ambiguous ? null : extraction.title,
+          artist: extraction.artist,
+          ambiguous: extraction.ambiguous || extraction.title === null,
+          raw_text: item.text,
+          route: attempt.result.route,
+          unsure: attempt.result.fallbackReason === 'offline_no_threshold',
+        });
+      } catch {
+        anyError = true;
+      }
+    }
+
+    setSavingSongs(false);
+    if (anyAmbiguous) {
+      publish({ title: copy.songAmbiguous });
+    }
+    if (anyError) {
+      publish({ title: copy.songError });
+    }
+    if (savedList.length === 0 && anyError) {
+      return;
+    }
+    setSubmittedSongs(savedList);
+    setStep('success');
+  }
+
+  function skipSongs() {
+    setSubmittedSongs([]);
     setStep('success');
   }
 
@@ -209,12 +336,20 @@ function RsvpScreen() {
     });
   }
 
+  function updateSong(index: number, value: string) {
+    setSongTexts((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  }
+
   return (
     <div className="guest">
       <div className="weave" />
       <header className="appbar">
         <div className="mono">{sheet ? partnerInitials(sheet) : '··'}</div>
-        <div className="seg" role="group" aria-label="Idioma">
+        <div className="seg" role="group" aria-label={lang === 'es' ? 'Idioma' : 'Language'}>
           <button type="button" aria-pressed={lang === 'es'} onClick={() => setLang('es')}>
             ES
           </button>
@@ -347,10 +482,57 @@ function RsvpScreen() {
               <button
                 type="button"
                 className="btn btn-primary btn-block"
-                disabled={draft.attending === ''}
+                disabled={draft.attending === '' || savingRsvp}
                 onClick={() => void confirm()}
               >
-                {copy.send}
+                {savingRsvp ? copy.savingRsvp : draft.attending === 'no' ? copy.send : copy.next}
+              </button>
+            </div>
+          </>
+        ) : null}
+
+        {step === 'songs' ? (
+          <>
+            <section className="r-head">
+              <p className="eyebrow">{copy.eyebrow}</p>
+              <h1 className="r-songs-title">
+                <Icon name="music" size={28} />
+                <span>{copy.songsTitle}</span>
+              </h1>
+              <p className="hint">{copy.songsHint}</p>
+              {!online ? <p className="hint">{copy.songsOfflineHint}</p> : null}
+            </section>
+            <section className="r-sec card">
+              {Array.from({ length: MAX_SONGS }, (_, i) => (
+                <div key={i} className="song-field">
+                  <label htmlFor={`song-${i}`}>{copy.songLabel(i + 1)}</label>
+                  <input
+                    id={`song-${i}`}
+                    className="input"
+                    value={songTexts[i]}
+                    disabled={savingSongs}
+                    placeholder={copy.songPlaceholder}
+                    onChange={(event) => updateSong(i, event.target.value)}
+                  />
+                </div>
+              ))}
+            </section>
+            <div className="r-submit r-songs-actions">
+              <button
+                type="button"
+                className="btn btn-primary btn-block"
+                disabled={savingSongs}
+                onClick={() => void saveSongs()}
+              >
+                {savingSongs ? copy.savingSongs : copy.send}
+              </button>
+              <button
+                type="button"
+                className="btn btn-quiet btn-block"
+                disabled={savingSongs}
+                onClick={skipSongs}
+              >
+                {copy.skip}
               </button>
             </div>
           </>
@@ -387,6 +569,32 @@ function RsvpScreen() {
                 <dt>{copy.transport}</dt>
                 <dd>{draft.needs_ride === true ? copy.rideYes : draft.needs_ride === false ? copy.rideNo : '—'}</dd>
               </div>
+              {draft.attending !== 'no' ? (
+                <div className="r-song-summary">
+                  <dt>{copy.songsSummary}</dt>
+                  <dd>
+                    {submittedSongs.length === 0 ? (
+                      copy.songsSkipped
+                    ) : (
+                      <ul className="r-song-list">
+                        {submittedSongs.map((item) => (
+                          <li key={item.slot} className="r-song-item">
+                            <span>
+                              {item.title
+                                ? `${item.title}${item.artist ? ` · ${item.artist}` : ''}`
+                                : `“${item.raw_text}” (${copy.songReviewTag})`}
+                            </span>
+                            <div className="r-song-meta">
+                              <RouteBadge route={item.route} lang={lang} />
+                              {item.unsure ? <span className="sm muted">{copy.unsure}</span> : null}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </dd>
+                </div>
+              ) : null}
             </dl>
             <a className="btn btn-primary btn-block" href={calendarUrl(sheet)}>
               <Icon name="cal" size={20} />

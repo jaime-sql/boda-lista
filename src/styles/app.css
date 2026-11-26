@@ -94,3 +94,46 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
 }
+
+.toast-viewport {
+  position: fixed;
+  bottom: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  width: calc(100% - var(--space-8));
+  max-width: var(--container-mobile);
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-inverse);
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--text-sm);
+}
+
+.toast .heading {
+  font-weight: var(--weight-semibold);
+}
+
+.toast .button-secondary {
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-inverse);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  flex: none;
+}

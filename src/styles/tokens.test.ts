@@ -18,7 +18,7 @@ describe('design tokens', () => {
   });
 
   it('keeps raw palette colors out of component styles', () => {
-    for (const file of ['components.css', 'guest.css', 'app.css']) {
+    for (const file of ['components.css', 'guest.css', 'app.css', 'rsvp.css', 'admin.css']) {
       const text = readFileSync(join(process.cwd(), 'src/styles', file), 'utf8');
       expect(text, file).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
     }
