@@ -13,6 +13,7 @@ import { saveRsvp, toSavedRsvp } from '../features/rsvp/save';
 import { extractSong } from '../features/song/extract';
 import { saveSong, toSavedSong } from '../features/song/save';
 import { calendarUrl, dateLine, mapsUrl, partnerInitials, type UiLang } from '../features/qa/sheetView';
+import { GUEST_FAILURE, logGuestFailure } from '../lib/guestFailure';
 import { useOnline } from '../lib/useOnline';
 
 type Lang = UiLang;
@@ -58,7 +59,6 @@ const COPY = {
     rideNo: 'No',
     next: 'Continuar',
     savingRsvp: 'Guardando…',
-    rsvpError: 'No se pudo guardar la confirmación. Inténtalo de nuevo.',
     skip: 'Omitir canciones',
     send: 'Enviar respuesta',
     sent: 'Respuesta enviada',
@@ -110,7 +110,6 @@ const COPY = {
     rideNo: 'No',
     next: 'Continue',
     savingRsvp: 'Saving…',
-    rsvpError: 'Could not save your reply. Try again.',
     skip: 'Skip songs',
     send: 'Send reply',
     sent: 'Reply sent',
@@ -174,6 +173,7 @@ function RsvpScreen() {
   const [savingRsvp, setSavingRsvp] = useState(false);
   const [note, setNote] = useState('');
   const [unsure, setUnsure] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [songTexts, setSongTexts] = useState<string[]>(['', '', '']);
   const [savingSongs, setSavingSongs] = useState(false);
   const [submittedSongs, setSubmittedSongs] = useState<SubmittedSong[]>([]);
@@ -204,6 +204,7 @@ function RsvpScreen() {
     setBusy(true);
     setNote('');
     setUnsure(false);
+    setFailed(false);
     try {
       const attempt = await extractRsvp(message.trim(), lang);
       setUnsure(attempt.result.fallbackReason === 'offline_no_threshold');
@@ -219,12 +220,9 @@ function RsvpScreen() {
         setAllergy(allergyTag ? allergyTag.slice('allergy:'.length) : '');
       }
       setStep('confirm');
-    } catch {
-      const blank = emptyDraft();
-      setDraft(blank);
-      setBaseline(blank);
-      setNote(copy.revisa);
-      setStep('confirm');
+    } catch (caught) {
+      logGuestFailure(caught);
+      setFailed(true);
     } finally {
       setBusy(false);
     }
@@ -244,6 +242,7 @@ function RsvpScreen() {
         ? !sameExtraction({ ...baseline, attending: baseline.attending }, next)
         : true;
     setSavingRsvp(true);
+    setFailed(false);
     try {
       markLastPromptDetails({ edited_by_guest: edited, confidence: next.confidence });
       await saveRsvp(toSavedRsvp(code.trim(), next, edited));
@@ -254,8 +253,9 @@ function RsvpScreen() {
       } else {
         setStep('success');
       }
-    } catch {
-      publish({ title: copy.rsvpError });
+    } catch (caught) {
+      logGuestFailure(caught);
+      setFailed(true);
     } finally {
       setSavingRsvp(false);
     }
@@ -359,6 +359,13 @@ function RsvpScreen() {
         </div>
       </header>
       <main className="screen">
+        {failed ? (
+          <div className="banner banner-danger" role="alert">
+            <div>
+              <b>{GUEST_FAILURE[lang].title}.</b> {GUEST_FAILURE[lang].body}
+            </div>
+          </div>
+        ) : null}
         {step === 'paste' ? (
           <>
             <section className="r-head">
