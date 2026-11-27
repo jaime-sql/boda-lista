@@ -8,6 +8,7 @@ import { RouteBadge } from '../components/RouteBadge';
 import { EmptyState, ErrorState, LoadingSkeleton, OfflineState } from '../components/ScreenState';
 import { useToast } from '../components/ToastProvider';
 import { getFirebaseProblem, initFirebase } from '../firebase/client';
+import { AnalyticsPanel } from '../features/analytics/AnalyticsPanel';
 import { fetchRecentLogs } from '../firebase/logs';
 import {
   buildDjPlaylist,
@@ -220,6 +221,15 @@ export function AdminPage() {
           </div>
         ) : null}
       </section>
+
+      {authReady ? (
+        <AnalyticsPanel
+          signedIn={Boolean(user)}
+          online={online}
+          reload={reload}
+          onRetry={() => setReload((value) => value + 1)}
+        />
+      ) : null}
 
       {user ? (
         <section className="stack gap-3 dj-section" aria-labelledby="songs-title">

@@ -23,6 +23,7 @@ export interface PromptLog {
   session_id: string;
   lang?: 'es' | 'en';
   edited_by_guest?: boolean;
+  source?: 'live' | 'loadtest' | 'eval';
 }
 
 export interface AskContext {

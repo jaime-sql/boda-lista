@@ -1,0 +1,138 @@
+.an-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.an-window {
+  flex-wrap: wrap;
+}
+
+.an-tiles {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr;
+}
+
+.an-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.an-value {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  line-height: var(--leading-snug);
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.an-value-small {
+  font-size: var(--text-lg);
+  color: var(--color-text-muted);
+}
+
+.an-speed {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.an-speed div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.an-speed dd {
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.an-subtitle {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.an-feature-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.an-bar {
+  display: flex;
+  height: 16px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
+}
+
+.an-seg {
+  display: block;
+  height: 100%;
+}
+
+.an-seg-device {
+  background: var(--color-device-fg);
+}
+
+.an-seg-cloud {
+  background: var(--color-cloud-fg);
+}
+
+.an-seg-offline {
+  background: var(--color-offline-fg);
+}
+
+.an-legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.an-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.an-reasons {
+  list-style: none;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.an-reasons li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--tap-min);
+  align-items: center;
+  border-top: 1px solid var(--color-border);
+}
+
+.an-reasons b {
+  white-space: nowrap;
+}
+
+.an-reasons li:first-child {
+  border-top: 0;
+}
+
+.an-footer {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 640px) {
+  .an-tiles {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
