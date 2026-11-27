@@ -64,7 +64,26 @@ function calendarDateTime(isoDate: string, minutesFromStart: number): string {
   return `${compactDate}T${hours}${minutes}00`;
 }
 
-export function calendarUrl(info: WeddingInfo): string {
+const ENGLISH_VENUE_DETAILS =
+  'The property is a 25-minute drive from central Santa Tecla. A covered backup hall is available if it rains.';
+
+const SPANISH_VENUE_DETAILS =
+  'La propiedad queda a 25 minutos en carro del centro de Santa Tecla. Hay un salón cubierto de respaldo si llueve.';
+
+function looksSpanish(text: string): boolean {
+  return /[áéíóúüñ¿¡]/i.test(text) || /\b(el|la|los|las|del|hay|para|con|una|ceremonia|boda)\b/i.test(text);
+}
+
+function calendarDetails(info: WeddingInfo, lang: UiLang): string {
+  const notes = (info.venue.notes ?? '').trim();
+  if (lang === 'en') return notes || info.disclaimer.trim();
+  if (notes === ENGLISH_VENUE_DETAILS) return SPANISH_VENUE_DETAILS;
+  if (notes && looksSpanish(notes)) return notes;
+  const place = [info.venue.name, info.venue.city].filter((part) => part.trim().length > 0).join(', ');
+  return place ? `Ceremonia en ${place}.` : 'Ceremonia de la boda.';
+}
+
+export function calendarUrl(info: WeddingInfo, lang: UiLang = 'es'): string {
   const item = ceremonyItem(info);
   const startMinutes = minutesOfDay(item?.time ?? '16:00') ?? 16 * 60;
   const itemIndex = item ? info.schedule.indexOf(item) : -1;
@@ -84,7 +103,7 @@ export function calendarUrl(info: WeddingInfo): string {
     dates: `${start}/${end}`,
     ctz: info.timezone || 'America/El_Salvador',
     location: venueLine(info),
-    details: info.venue.notes ?? info.disclaimer,
+    details: calendarDetails(info, lang),
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }

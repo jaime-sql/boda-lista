@@ -22,6 +22,16 @@
   top: var(--space-3);
 }
 
+/* On a phone the absolute sprig covers the end of the name. Keep it above the heading. */
+@media (max-width: 430px) {
+  .g-hero-art {
+    position: static;
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: var(--space-2);
+  }
+}
+
 .g-names {
   font-size: 2.5rem;
   margin: var(--space-1) 0 var(--space-2);

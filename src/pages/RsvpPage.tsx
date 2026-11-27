@@ -37,7 +37,8 @@ const COPY = {
   es: {
     eyebrow: 'Confirma tu asistencia',
     title: 'Tu invitación',
-    hint: 'Pega la respuesta que ya le escribiste a la familia, en español o inglés.',
+    hint: 'Escribe tu respuesta como se la mandarías a los novios: quiénes van y si alguien tiene alguna restricción.',
+    codePlaceholder: 'Ej. GARCIA-24',
     deadline: (month: string) => `Confirma antes del 1 de ${month}`,
     message: 'Respuesta',
     code: 'Código de invitación',
@@ -88,7 +89,8 @@ const COPY = {
   en: {
     eyebrow: 'Confirm your attendance',
     title: 'Your invitation',
-    hint: 'Paste the reply you already sent the family, in Spanish or English.',
+    hint: "Write your reply like you'd text the couple: who's coming and any dietary needs.",
+    codePlaceholder: 'e.g. GARCIA-24',
     deadline: (month: string) => `Confirm before 1 ${month}`,
     message: 'Reply',
     code: 'Invite code',
@@ -385,6 +387,7 @@ function RsvpScreen() {
                 id="invite-code"
                 className="input"
                 value={code}
+                placeholder={copy.codePlaceholder}
                 autoComplete="off"
                 onChange={(event) => setCode(event.target.value)}
               />
@@ -603,7 +606,7 @@ function RsvpScreen() {
                 </div>
               ) : null}
             </dl>
-            <a className="btn btn-primary btn-block" href={calendarUrl(sheet)}>
+            <a className="btn btn-primary btn-block" href={calendarUrl(sheet, lang)}>
               <Icon name="cal" size={20} />
               {copy.calendar}
             </a>
