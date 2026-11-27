@@ -103,12 +103,12 @@ python -m pytest evals/tests
 - **Deploy & test status at `b2e93e2`:**
   - `npm test` passed (`23` files, `90` tests) and `npm run build` passed on `main`. (`npm run test:e2e` passed `12` Playwright tests on PR #15 prior to merge.)
   - **Live Firebase Hosting (`https://boda-lista.web.app`):** `Deploy to Firebase Hosting` run `45771011758` succeeded and includes `VITE_APPCHECK_SITE_KEY`, PR #14, PR #15, and PR #16.
-- **Open blocker — Firestore rules CI (`Deploy Firestore rules` run `45771011677`):**
-  - Run `45771011677` failed with `HTTP Error: 403, Permission denied to get service [firestore.googleapis.com]`.
-  - The GitHub deploy service account already has `roles/firebase.rulesAdmin`, but `firebase-tools deploy --only firestore:rules` checks Service Usage first and needs `serviceusage.services.get` (e.g., `roles/serviceusage.serviceUsageViewer`).
-  - Until Jaime grants that role and re-runs `45771011677` (or runs a manual owner deploy `firebase deploy --only firestore:rules`), live `firestore.rules` does **not** yet have the `songs` collection rule, so live writes/reads on `/songs` will fail.
+- **Firestore rules CI (`Deploy Firestore rules` run `45771011677` failed with `HTTP Error: 403, Permission denied to get service [firestore.googleapis.com]`):**
+  - Cause: `firebase-tools deploy` checks Service Usage first and needs `serviceusage.services.get`, which the deploy service account (`roles/firebase.rulesAdmin` only) lacks.
+  - Fix: `.github/workflows/firestore-rules.yml` now runs `tools/ci/deploy-firestore-rules.sh`, which publishes `firestore.rules` through the Firebase Rules REST API (create ruleset, then update the `cloud.firestore` release). That needs only `roles/firebase.rulesAdmin`; no new IAM role is required.
+  - After this merges to `main`, the workflow runs on its own (the script is a trigger path). Confirm it is green and that `/songs` reads/writes work live.
 - **Next open priorities:**
-  1. Unblock and complete `Deploy Firestore rules` for live `songs` reads/writes.
+  1. Confirm `Deploy Firestore rules` is green after the REST-based deploy lands, for live `songs` reads/writes.
   2. Build the `"Cómo responde la IA"` analytics panel on `/admin` + rollup JSON per Notion's Analytics panel spec v1.2 (excluding `offline_no_threshold` and `sheet` routes from device share and cloud savings).
   3. Complete Gemini Nano on-device dev eval (`evals/nano_runner/index.html`) if Chrome Prompt API + Optimization Guide flags work on Jaime's desktop Chrome; otherwise keep `src/config/config.json` cut-offs at `null` per Jaime's decision.
   4. Fill remaining Devpost text and 3-minute video script placeholders from verified metrics before the Sun Nov 29 noon SV code freeze.
