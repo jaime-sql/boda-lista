@@ -5,9 +5,10 @@ import { ToastProvider } from '../components/ToastProvider';
 import type { SavedSong } from '../features/song/save';
 import { AdminPage } from './AdminPage';
 
-const { fetchSongs, fetchRecentLogs } = vi.hoisted(() => ({
+const { fetchSongs, fetchRecentLogs, fetchAllLogs } = vi.hoisted(() => ({
   fetchSongs: vi.fn<() => Promise<SavedSong[]>>(),
   fetchRecentLogs: vi.fn(async () => []),
+  fetchAllLogs: vi.fn(async () => []),
 }));
 
 vi.mock('firebase/auth', () => ({
@@ -31,6 +32,7 @@ vi.mock('../ai/device', () => ({
 
 vi.mock('../firebase/logs', () => ({
   fetchRecentLogs,
+  fetchAllLogs,
 }));
 
 vi.mock('../features/song/save', () => ({

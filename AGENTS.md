@@ -72,7 +72,7 @@ Instructions for AI coding agents working in `jaime-sql/boda-lista`.
 | `src/ai/` | Hybrid `ask()`, route/fallback logic, sheet logging, device probe |
 | `src/config/` | Confidence threshold loader & `config.json` |
 | `src/data/` | `wedding_info` loader, `localStorage` offline cache, sample sheet |
-| `src/features/` | `qa/`, `rsvp/`, `song/` (feature-specific prompts, parsers, extraction, persistence) |
+| `src/features/` | `qa/`, `rsvp/`, `song/` (feature-specific prompts, parsers, extraction, persistence), `analytics/` (rollup math + `/admin` panel `Cómo responde la IA`) |
 | `src/pages/` | Guest Q&A (`/`), RSVP (`/rsvp`), Organizer diagnostics (`/admin`) |
 | `src/styles/` | Design tokens (`tokens.css` / `tokens.json`) and stylesheets |
 | `firestore.rules` | Strict field-allowlisted Firestore rules + CI deploy workflow |
@@ -110,6 +110,6 @@ python -m pytest evals/tests
   - After the compile fix merges to `main`, the workflow runs on its own. Confirm it is green and that `/songs` reads/writes work live.
 - **Next open priorities:**
   1. Confirm `Deploy Firestore rules` is green after the REST-based deploy lands, for live `songs` reads/writes.
-  2. Build the `"Cómo responde la IA"` analytics panel on `/admin` + rollup JSON per Notion's Analytics panel spec v1.2 (excluding `offline_no_threshold` and `sheet` routes from device share and cloud savings).
+  2. Analytics panel (`src/features/analytics/`) is built per Notion spec v1.2, with one deviation: there is no Modal job. `buildRollup()` computes the spec's rollup JSON in the browser from `prompt_logs` for the signed-in organizer, and the panel falls back to a static `/analytics/rollup.json`. **At code freeze (Sun Nov 29 noon SV):** open `/admin` signed in, click `Descargar rollup.json`, commit it as `public/analytics/rollup.json`, and cite its `generated_at` in the video and Devpost. Do not commit a placeholder file. Rows with `source` other than `live` are dropped; rows with no `source` count as live because the log does not write `source` yet (adding it needs a `firestore.rules` change).
   3. Complete Gemini Nano on-device dev eval (`evals/nano_runner/index.html`) if Chrome Prompt API + Optimization Guide flags work on Jaime's desktop Chrome; otherwise keep `src/config/config.json` cut-offs at `null` per Jaime's decision.
   4. Fill remaining Devpost text and 3-minute video script placeholders from verified metrics before the Sun Nov 29 noon SV code freeze.
