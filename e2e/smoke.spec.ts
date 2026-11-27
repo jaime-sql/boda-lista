@@ -7,11 +7,49 @@ test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
 });
 
+function boxesOverlap(
+  a: { x: number; y: number; width: number; height: number },
+  b: { x: number; y: number; width: number; height: number },
+): boolean {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
 test('guest mobile screenshot', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Lucía Mendoza');
+  const heading = page.getByRole('heading', { level: 1 });
+  await expect(heading).toContainText('Lucía Mendoza');
   await expect(page.getByText('Hacienda El Sauce')).toBeVisible();
+
+  const calendar = new URL((await page.getByRole('link', { name: 'Al calendario' }).getAttribute('href')) ?? '');
+  const [start, end] = (calendar.searchParams.get('dates') ?? '').split('/');
+  expect(start).not.toBe(end);
+  expect(calendar.searchParams.get('ctz')).toBe('America/El_Salvador');
+  expect(calendar.searchParams.get('details') ?? '').toContain('salón');
+
+  await page.getByRole('button', { name: 'EN', exact: true }).click();
+  const englishLink = page.getByRole('link', { name: 'Add to calendar' });
+  await expect(englishLink).toHaveAttribute('href', /25-minute/);
+  await expect(englishLink).toHaveAttribute('href', /ctz=/);
+  await page.getByRole('button', { name: 'ES', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Al calendario' })).toHaveAttribute('href', /sal%C3%B3n/);
+
+  const icon = page.locator('.banner-info svg');
+  await expect(icon).toHaveAttribute('aria-hidden', 'true');
+  const iconBox = await icon.boundingBox();
+  expect(iconBox?.width ?? 0).toBeGreaterThanOrEqual(17);
+  expect(iconBox?.height ?? 0).toBeGreaterThanOrEqual(17);
+
+  for (const width of [360, 390, 430]) {
+    await page.setViewportSize({ width, height: 844 });
+    const name = await heading.boundingBox();
+    const sprig = await page.locator('.g-hero-art svg').boundingBox();
+    expect(name).toBeTruthy();
+    expect(sprig).toBeTruthy();
+    if (name && sprig) expect(boxesOverlap(name, sprig)).toBe(false);
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: 'docs/screenshots/guest-mobile.png', fullPage: true });
 });
 
