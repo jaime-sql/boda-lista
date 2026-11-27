@@ -115,6 +115,18 @@ describe('RsvpPage', () => {
 
     renderRsvp();
     expect(await screen.findByRole('heading', { name: 'Tu invitación' })).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Escribe tu respuesta como se la mandarías a los novios: quiénes van y si alguien tiene alguna restricción.',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByLabelText('Código de invitación')).toHaveProperty('placeholder', 'Ej. GARCIA-24');
+    await user.click(screen.getByRole('button', { name: /^EN$/ }));
+    expect(
+      screen.getByText("Write your reply like you'd text the couple: who's coming and any dietary needs."),
+    ).toBeTruthy();
+    expect(screen.getByLabelText('Invite code')).toHaveProperty('placeholder', 'e.g. GARCIA-24');
+    await user.click(screen.getByRole('button', { name: /^ES$/ }));
     await user.type(screen.getByLabelText('Respuesta'), 'Si, vamos tres');
     await user.click(screen.getByRole('button', { name: 'Leer respuesta' }));
     expect(await screen.findByRole('button', { name: 'Sí, ahí estaremos' })).toHaveProperty('ariaPressed', 'true');
