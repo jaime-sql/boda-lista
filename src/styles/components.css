@@ -107,8 +107,10 @@ textarea.input{padding:var(--space-4);line-height:var(--leading-normal)}
 
 /* Banner */
 .banner{display:flex;gap:var(--space-3);align-items:flex-start;padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);font-size:var(--text-base);line-height:var(--leading-snug)}
+.banner svg{flex:none}
 .banner-offline{background:var(--color-offline-bg);color:var(--color-offline-fg)}
 .banner-info{background:var(--color-warning-bg);color:var(--color-warning-fg)}
+.banner-info svg{width:1em;height:1em;min-width:1em;min-height:1em}
 
 /* Tables (desktop) */
 .table{width:100%;border-collapse:separate;border-spacing:0}
