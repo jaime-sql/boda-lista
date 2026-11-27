@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import type { SavedRsvp } from '../features/rsvp/save';
 import type { SavedSong } from '../features/song/save';
+import * as firebaseConfig from '../firebase/config';
 import { RsvpPage, UNSURE_LABEL } from './RsvpPage';
 
 const { extractRsvp, saveRsvp, extractSong, saveSong } = vi.hoisted(() => ({
@@ -47,6 +48,7 @@ afterEach(() => {
   saveRsvp.mockClear();
   extractSong.mockReset();
   saveSong.mockClear();
+  vi.restoreAllMocks();
 });
 
 function renderRsvp() {
@@ -231,5 +233,56 @@ describe('RsvpPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Enviar respuesta' }));
     expect(await screen.findByRole('heading', { name: 'Gracias por confirmar' })).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'Canciones para el DJ' })).toBeNull();
+  });
+
+  it('shows a guest-friendly error and logs the missing env name when reading fails', async () => {
+    const user = userEvent.setup();
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(firebaseConfig, 'missingEnv').mockReturnValue(['VITE_APPCHECK_SITE_KEY']);
+    extractRsvp.mockRejectedValue(new Error('firebase-config-missing'));
+    renderRsvp();
+    await screen.findByRole('heading', { name: 'Tu invitación' });
+    await user.type(screen.getByLabelText('Respuesta'), 'Si, vamos tres');
+    await user.click(screen.getByRole('button', { name: 'Leer respuesta' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('No pudimos responder ahora. Intenta de nuevo en un momento.');
+    expect(alert.textContent).not.toContain('VITE_');
+    expect(alert.textContent).not.toContain('variables de entorno');
+    expect(screen.queryByText(/Revisa los campos/)).toBeNull();
+    expect(errorSpy).toHaveBeenCalledWith('Firebase disabled: missing VITE_APPCHECK_SITE_KEY');
+
+    await user.click(screen.getByRole('button', { name: 'EN' }));
+    expect(screen.getByRole('alert').textContent).toContain(
+      "We couldn't answer right now. Please try again in a moment.",
+    );
+  });
+
+  it('keeps the guest on the form when saving fails', async () => {
+    const user = userEvent.setup();
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(firebaseConfig, 'missingEnv').mockReturnValue(['VITE_APPCHECK_SITE_KEY']);
+    extractRsvp.mockResolvedValue({
+      extraction: extracted,
+      result: {
+        text: '{}',
+        route: 'cloud',
+        fallbackReason: 'no_threshold',
+        latencyMs: 8,
+        inputChars: 20,
+        outputChars: 40,
+        model: 'gemini-3.5-flash-lite',
+      },
+      retried: false,
+    });
+    saveRsvp.mockRejectedValue(new Error('firebase-config-missing'));
+    renderRsvp();
+    await screen.findByRole('heading', { name: 'Tu invitación' });
+    await user.type(screen.getByLabelText('Respuesta'), 'Si, vamos tres');
+    await user.click(screen.getByRole('button', { name: 'Leer respuesta' }));
+    await user.click(await screen.findByRole('button', { name: 'Continuar' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('No pudimos responder ahora. Intenta de nuevo en un momento.');
+    expect(screen.queryByRole('heading', { name: 'Gracias por confirmar' })).toBeNull();
+    expect(errorSpy).toHaveBeenCalledWith('Firebase disabled: missing VITE_APPCHECK_SITE_KEY');
   });
 });

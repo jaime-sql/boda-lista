@@ -7,6 +7,7 @@ import {
 } from 'firebase/app-check';
 import { connectAuthEmulator, getAuth, type Auth } from 'firebase/auth';
 import { connectFirestoreEmulator, getFirestore, type Firestore } from 'firebase/firestore';
+import { logGuestFailure } from '../lib/guestFailure';
 import { applyDebugToken, readFirebaseConfig } from './config';
 
 export interface FirebaseServices {
@@ -29,7 +30,9 @@ export function initFirebase(): FirebaseServices | null {
   if (services) return services;
   const config = readFirebaseConfig();
   if (!config) {
+    const alreadyMissing = problem === 'missing';
     problem = 'missing';
+    if (!alreadyMissing) logGuestFailure(new Error('firebase-config-missing'));
     return null;
   }
   try {
@@ -49,9 +52,9 @@ export function initFirebase(): FirebaseServices | null {
     services = { app, auth, db };
     problem = null;
     return services;
-  } catch {
+  } catch (error) {
     problem = 'failed';
-    console.error('Firebase init failed');
+    logGuestFailure(error);
     return null;
   }
 }

@@ -38,11 +38,21 @@ test('admin desktop screenshot', async ({ page }) => {
 });
 
 test('guest question reaches an error without Firebase config', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text());
+  });
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Lucía Mendoza');
   await page.getByLabel('Tu pregunta').fill('¿A qué hora es la ceremonia?');
   await page.getByRole('button', { name: 'Enviar' }).click();
-  await expect(page.getByRole('alert')).toContainText('Firebase');
+  const alert = page.getByRole('alert');
+  await expect(alert).toContainText('No pudimos responder ahora. Intenta de nuevo en un momento.');
+  await expect(alert).not.toContainText('Firebase');
+  await expect(alert).not.toContainText('VITE_');
+  const logged = errors.join('\n');
+  expect(logged).toContain('Firebase disabled: missing');
+  expect(logged).toContain('VITE_APPCHECK_SITE_KEY');
 });
 
 test('quick chip answers from the sheet without Firebase config', async ({ page }) => {
