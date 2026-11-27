@@ -106,7 +106,8 @@ python -m pytest evals/tests
 - **Firestore rules CI (`Deploy Firestore rules` run `45771011677` failed with `HTTP Error: 403, Permission denied to get service [firestore.googleapis.com]`):**
   - Cause: `firebase-tools deploy` checks Service Usage first and needs `serviceusage.services.get`, which the deploy service account (`roles/firebase.rulesAdmin` only) lacks.
   - Fix: `.github/workflows/firestore-rules.yml` now runs `tools/ci/deploy-firestore-rules.sh`, which publishes `firestore.rules` through the Firebase Rules REST API (create ruleset, then update the `cloud.firestore` release). That needs only `roles/firebase.rulesAdmin`; no new IAM role is required.
-  - After this merges to `main`, the workflow runs on its own (the script is a trigger path). Confirm it is green and that `/songs` reads/writes work live.
+  - The first run with the new script reached the Rules API and failed with `The Ruleset provided does not compile` (`Recursive call is not allowed` in `mealsOk`). Firestore rules cannot recurse, so `mealsOk` now checks the 8 allowed list slots with `mealTagOk`. Validate rule changes with the emulator before merging: `npx firebase-tools emulators:exec --only firestore --project demo-boda-lista <script>`.
+  - After the compile fix merges to `main`, the workflow runs on its own. Confirm it is green and that `/songs` reads/writes work live.
 - **Next open priorities:**
   1. Confirm `Deploy Firestore rules` is green after the REST-based deploy lands, for live `songs` reads/writes.
   2. Build the `"Cómo responde la IA"` analytics panel on `/admin` + rollup JSON per Notion's Analytics panel spec v1.2 (excluding `offline_no_threshold` and `sheet` routes from device share and cloud savings).

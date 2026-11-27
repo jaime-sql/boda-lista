@@ -78,13 +78,24 @@ function isValidPromptLog(data) {
     && data.session_id.size() <= 80;
 }
 
-function mealsOk(tags) {
-  return tags.size() == 0
+function mealTagOk(tags, i) {
+  return tags.size() <= i
     || (
-      tags[0] is string
-      && tags[0].matches('^(vegetarian|vegan|gluten_free|kids_menu|allergy:[a-z][a-z0-9_]{0,31})$')
-      && mealsOk(tags.removeAll([tags[0]]))
+      tags[i] is string
+      && tags[i].matches('^(vegetarian|vegan|gluten_free|kids_menu|allergy:[a-z][a-z0-9_]{0,31})$')
     );
+}
+
+function mealsOk(tags) {
+  return tags.size() <= 8
+    && mealTagOk(tags, 0)
+    && mealTagOk(tags, 1)
+    && mealTagOk(tags, 2)
+    && mealTagOk(tags, 3)
+    && mealTagOk(tags, 4)
+    && mealTagOk(tags, 5)
+    && mealTagOk(tags, 6)
+    && mealTagOk(tags, 7);
 }
 
 function isValidRsvp(data) {
